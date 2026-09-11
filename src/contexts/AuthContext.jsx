@@ -16,7 +16,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function cadastro(email, nome_completo, password, re_password) {
-    await api.post("/auth/users", {
+    await api.post("/auth/users/", {
       email,
       nome_completo,
       password,
