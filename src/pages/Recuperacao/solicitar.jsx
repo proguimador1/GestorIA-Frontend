@@ -22,7 +22,7 @@ export default function SolicitarRecuperacao() {
     } catch (error) {
       setStatus("error");
       setMessage(
-        `Ocorreu um erro no processo de recuperação de senha: ${error}`,
+        `Ocorreu um erro no processo de recuperação de senha: ${error.userMessage}`,
       );
     }
   };

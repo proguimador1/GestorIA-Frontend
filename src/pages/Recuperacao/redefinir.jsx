@@ -33,7 +33,7 @@ export default function RedefinirSenha() {
     } catch (error) {
       setStatus("error");
       // Erro 400 aqui geralmente significa que o token expirou ou é inválido
-      setMensagem(`Erro ao prosseguir com a nova senha: ${error}.`);
+      setMensagem(`Erro ao prosseguir com a nova senha: ${error.userMessage}.`);
     }
   };
 

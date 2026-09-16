@@ -25,7 +25,7 @@ export default function Cadastro() {
         formData.re_password,
       );
     } catch (error) {
-      alert(`Erro ao cadastrar. ${error}`);
+      alert(`Erro ao cadastrar. ${error.userMessage}`);
     }
   };
 
