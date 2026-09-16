@@ -37,10 +37,20 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
-    localStorage.removeItem("@GestorIA:token");
-    localStorage.removeItem("@GestorIA:token");
-    setUser(null);
-    navigate("/login");
+    const refreshToken = localStorage.getItem("@GestorIA:refresh");
+
+    try {
+      if (refreshToken) {
+        await api.post("/auth/jwt/logout/", { refresh: refreshToken });
+      }
+    } catch (error) {
+      console.error("Não foi possível invalidar o token no backend:", error);
+    } finally {
+      localStorage.removeItem("@GestorIA:token");
+      localStorage.removeItem("@GestorIA:refresh");
+      setUser(null);
+      navigate("/login");
+    }
   }
 
   return (
