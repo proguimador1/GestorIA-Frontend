@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>GestorIA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/components.css" />
+  </head>
+  <body>
+    <div class="app">
+      <nav class="side" id="nav"></nav>
+      <div class="main">
+        <header class="top">
+          <div class="logo">Gestor<b>IA</b></div>
+          <div class="sync" id="sync"><i></i><span>Sincronizado</span></div>
+          <div class="cnt" id="cnt"></div>
+          <div class="av" id="av" data-a="perfil" title="Meu perfil"></div>
+        </header>
+        <main class="wrap" id="view"></main>
+      </div>
+    </div>
+    <div id="pmenu" class="pmenu" hidden></div>
+    <div id="modal" class="modal" hidden></div>
+    <div id="toast" class="toast" hidden></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/data/seed.js"></script>
+    <script src="js/store.js"></script>
+    <script src="js/finance.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/pages/inicio.js"></script>
+    <script src="js/pages/cadastro.js"></script>
+    <script src="js/pages/financas.js"></script>
+    <script src="js/pages/notas.js"></script>
+    <script src="js/pages/chatbot.js"></script>
+    <script src="js/pages/configuracoes.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
