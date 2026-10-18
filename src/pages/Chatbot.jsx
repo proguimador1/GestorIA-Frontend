@@ -23,7 +23,7 @@ export default function Chatbot() {
           <button className="btn dk" onClick={() => send(txt)}>Enviar</button>
         </div>
       </div>
-      <p className="lab" style={{ marginTop: 14, fontSize: 12.5 }}>As respostas vêm de consultas às notas cadastradas, não de um modelo de linguagem.</p>
+      <p className="lab" style={{ marginTop: 14, fontSize: 14 }}>As respostas vêm de consultas às notas cadastradas, não de um modelo de linguagem.</p>
     </>
   )
 }

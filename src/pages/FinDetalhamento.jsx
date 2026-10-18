@@ -1,14 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import Icon from '../components/Icon.jsx'
-import { Delta } from './FinVisao.jsx'
-import { col } from '../components/Donut.jsx'
 import { useApp } from '../store/AppContext.jsx'
 import { EST } from '../data/seed.js'
-import { brl, estName, pct, sum } from '../lib/utils.js'
+import { brl, estName, sum } from '../lib/utils.js'
 
-const SHADES = ['#2E4429', '#4A6B3E', '#7E9A6B', '#B5C4A0']
-
-// Aba "Detalhamento": mesmo item em preços diferentes e resumo da seleção.
+// Aba "Detalhamento": tabela comparativa de menor preço por item entre estabelecimentos.
 export default function Detalhamento() {
   const { F, fin } = useApp()
   const nav = useNavigate()
@@ -31,66 +27,37 @@ export default function Detalhamento() {
   const ws = Object.entries(win).sort((a, b) => b[1] - a[1])
   const zero = used.find(e => !win[e.id] && rows.some(([, m]) => m[e.id]))
   const msg = ws.length ? `${estName(ws[0][0])} tem o menor preço em ${ws[0][1]} dos ${rows.length} itens${ws[1] ? ' e ' + estName(ws[1][0]) + ' em ' + ws[1][1] : ''}.${zero ? ` ${zero.name} não foi o mais barato em nenhum item${F.cat ? ' de ' + F.cat.toLowerCase() : ''}.` : ''}` : ''
-
-  // Resumo da seleção
-  const ci = fin.items(r), ct = sum(ci.map(i => i.total)), cn = [...new Set(ci.map(i => i.n.id))]
-  const sp = {}; ci.forEach(i => { sp[i.n.est] = (sp[i.n.est] || 0) + i.total })
-  const spl = Object.entries(sp).sort((a, b) => b[1] - a[1])
-  const allTot = sum(fin.items(r, { cat: '' }).map(i => i.total)) || 1
-  const prevTot = sum(fin.items(fin.prevRange()).map(i => i.total))
+  const cn = new Set(fin.items(r).map(i => i.n.id)).size
 
   return (
     <>
-      <div className="row mt" style={{ alignItems: 'stretch' }}>
-        <div className="card" style={{ width: 740, flex: 'none', minWidth: 0 }}>
-          <div className="mono lab">Mesmo item, preços diferentes{F.cat ? ' · ' + F.cat : ''}</div>
-          <div className="lab" style={{ fontSize: 13, margin: '8px 0 18px' }}>Último preço pago no período · verde = menor preço · role para ver mais mercados e itens</div>
-          {lines.length ? (<>
-            <div className="scr" style={{ maxHeight: 382, border: '1px solid var(--line)', borderRadius: 14 }}>
-              <table style={{ minWidth: 300 + used.length * 120 }}>
-                <thead><tr>
-                  <th className="stl">Item</th>
-                  {used.map(e => <th key={e.id} className="r">{e.name.replace('Mercado ', '')}</th>)}
-                  <th className="str" style={{ background: '#ece8d9' }}>Melhor preço</th>
-                </tr></thead>
-                <tbody>{lines.map(({ k, m, lo, best, avg }) => (
-                  <tr key={k}>
-                    <td className="stl"><b style={{ fontWeight: 500 }}>{k}</b></td>
-                    {used.map(e => <td key={e.id} className="r">{m[e.id] ? (m[e.id].p === lo ? <span className="good">{brl(lo)}</span> : brl(m[e.id].p)) : <span className="lab">—</span>}</td>)}
-                    <td className="str"><b style={{ color: 'var(--dg)' }}>{estName(best)}</b><div className="lab" style={{ fontSize: 11.5 }}>{brl(avg - lo)} abaixo da média</div></td>
-                  </tr>
-                ))}</tbody>
-              </table>
-            </div>
-            {msg && <div className="note">{msg}</div>}
-          </>) : <div className="empty">Nenhum item comprado em mais de um estabelecimento neste período.</div>}
-        </div>
-
-        <div className="card" style={{ flex: 1, minWidth: 0 }}>
-          <div className="mono lab">Resumo da seleção</div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 14 }}>
-            <i className="dot" style={{ background: F.cat ? col(F.cat) : 'var(--dg)' }} /><b>{F.cat || 'Todas as categorias'}</b>
+      <div className="card mt" style={{ minWidth: 0 }}>
+        <div className="ct">Tabela comparativa de menor preço{F.cat ? ' · ' + F.cat : ''}</div>
+        <div className="cs" style={{ marginBottom: 20 }}>A cor verde representa o menor preço entre todos os estabelecimentos</div>
+        {lines.length ? (<>
+          <div className="scr" style={{ maxHeight: 560, border: '1px solid var(--line)', borderRadius: 14 }}>
+            <table style={{ minWidth: 300 + used.length * 150 }}>
+              <thead><tr>
+                <th className="stl">Item</th>
+                {used.map(e => <th key={e.id} className="r">{e.name}</th>)}
+                <th className="str" style={{ background: '#ece8d9' }}>Melhor preço</th>
+              </tr></thead>
+              <tbody>{lines.map(({ k, m, lo, best, avg }) => (
+                <tr key={k}>
+                  <td className="stl"><b style={{ fontWeight: 500 }}>{k}</b></td>
+                  {used.map(e => <td key={e.id} className="r">{m[e.id] ? (m[e.id].p === lo ? <span className="good">{brl(lo)}</span> : brl(m[e.id].p)) : <span className="lab">—</span>}</td>)}
+                  <td className="str"><b style={{ color: 'var(--dg)' }}>{estName(best)}</b><div className="lab" style={{ fontSize: 12 }}>{brl(avg - lo)} abaixo da média</div></td>
+                </tr>
+              ))}</tbody>
+            </table>
           </div>
-          <div className="serif" style={{ fontWeight: 600, fontSize: 38, marginTop: 6 }}>{brl(ct)}</div>
-          <div className="lab" style={{ fontSize: 13, marginTop: 4 }}>{F.cat ? pct(ct / allTot * 100) + ' do gasto do período · ' : ''}<Delta a={ct} b={prevTot} /> contra {fin.prevLab()}</div>
-          <div style={{ display: 'flex', gap: 26, marginTop: 22, padding: '16px 0', borderBlock: '1px solid var(--line)' }}>
-            {[[ci.length, 'itens'], [cn.length, 'notas fiscais'], [brl(cn.length ? ct / cn.length : 0), 'valor médio por nota']].map(([v, t]) => (
-              <div key={t}><div className="serif" style={{ fontWeight: 600, fontSize: 22 }}>{v}</div><div className="lab" style={{ fontSize: 12 }}>{t}</div></div>
-            ))}
-          </div>
-          <div className="lab" style={{ fontSize: 12.5, margin: '18px 0 10px' }}>Onde foi comprado</div>
-          <div style={{ display: 'flex', borderRadius: 7, overflow: 'hidden', gap: 2 }}>{spl.map(([id, v], i) => <div key={id} style={{ width: (v / ct * 100) + '%', background: SHADES[i % 4], height: 14 }} />)}</div>
-          {spl.map(([id, v], i) => (
-            <div key={id} style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 10, fontSize: 13.5 }}>
-              <i className="dot" style={{ background: SHADES[i % 4] }} /><span style={{ flex: 1 }}>{estName(id)}</span><b>{pct(v / ct * 100)}</b><span className="lab" style={{ width: 88, textAlign: 'right' }}>{brl(v)}</span>
-            </div>
-          ))}
-        </div>
+          {msg && <div className="note">{msg}</div>}
+        </>) : <div className="empty">Nenhum item comprado em mais de um estabelecimento neste período.</div>}
       </div>
 
       <div className="card mt" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '20px 30px' }}>
         <span style={{ color: 'var(--dg)' }}><Icon n="rcpt" s={24} /></span>
-        <div style={{ flex: 1, fontSize: 14.5 }}>{cn.length} notas fiscais deste período têm itens{F.cat ? ' de ' + F.cat.toLowerCase() : ''}. Veja cada nota e os itens comprados.</div>
+        <div style={{ flex: 1, fontSize: 15 }}>{cn} notas fiscais deste período têm itens{F.cat ? ' de ' + F.cat.toLowerCase() : ''}. Veja cada nota e os itens comprados.</div>
         <span className="sc" style={{ color: 'var(--dg)', fontWeight: 500 }} onClick={() => nav('/notas')}>Ver em Notas fiscais</span>
       </div>
     </>

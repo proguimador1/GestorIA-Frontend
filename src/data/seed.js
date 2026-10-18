@@ -21,3 +21,8 @@ export const SAMPLES=[
 {est:'sao',nf:'118301',date:'2026-08-24',items:[['Tomate italiano',1.2,'kg',11.4,'Hortifruti','geladeira'],['Arroz agulhinha 5kg',1,'un',27.9,'Mercearia','despensa'],['Peito de frango',900,'g',23.5,'Carnes','freezer'],['Cebola roxa',600,'g',6.2,'Hortifruti','despensa']]},
 {est:'pao',nf:'004911',date:'2026-08-21',items:[['Leite sem lactose',2,'L',15.8,'Laticínios','geladeira'],['Azeite extra virgem',500,'ml',39.9,'Mercearia','despensa'],['Ovos caipira',12,'un',18.4,'Laticínios','geladeira']]},
 {est:'feira',nf:'',date:'2026-08-18',items:[['Banana prata',1.5,'kg',8.7,'Hortifruti','despensa'],['Alface crespa',2,'un',5,'Hortifruti','geladeira'],['Manjericão',1,'maço',3.5,'Hortifruti','geladeira']]}];
+
+// Paleta de reserva: cores atribuídas automaticamente a categorias novas (as 5 primeiras de CATS têm cor fixa).
+export const PALETTE=['#D9822B','#A23B72','#3B6E8F','#6C4F9A','#2F8F83','#C9A227','#8F2D56','#5B8E7D','#D1495B','#EDAE49','#00798C','#30638E','#7A9E3B','#B5651D','#6D597A','#B56576','#E56B6F','#355070','#99B898','#E8A87C','#C38D9E','#41B3A3','#85A389','#9C6644','#588157','#BC6C25','#7B2CBF','#E76F51','#2A9D8F','#264653'];
+// Cor de uma categoria: fixa se conhecida; senão, a próxima cor livre da paleta (ordem alfabética das categorias novas).
+export const colorOf=(c,all)=>CATS[c]||PALETTE[all.filter(x=>!CATS[x]).sort().indexOf(c)%PALETTE.length]||CATS.Outros;

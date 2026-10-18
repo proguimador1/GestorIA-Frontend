@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { add, brl, dm, dt, estName } from '../lib/utils.js'
 
-const W = 640, H = 400, L = 64, R = 16, T = 16, B = 36
+const L = 64, R = 16, T = 16, B = 36
 
 // Curva suave por interpolação cúbica monotônica (não gera valores abaixo de zero).
 function mono(p) {
@@ -23,6 +23,14 @@ function mono(p) {
 // Gráfico de linha: um ponto por dia com compra. mode: 'dia' ou 'acum'.
 export default function LineChart({ byDay, range: r, mode }) {
   const [hov, setHov] = useState(null)
+  const wrap = useRef(null)
+  const [{ W, H }, setDim] = useState({ W: 580, H: 420 })
+  // O gráfico ocupa todo o espaço disponível do cartão, sem sobrar área vazia.
+  useEffect(() => {
+    const ro = new ResizeObserver(([e]) => setDim({ W: Math.max(320, Math.round(e.contentRect.width)), H: Math.max(260, Math.round(e.contentRect.height)) }))
+    ro.observe(wrap.current)
+    return () => ro.disconnect()
+  }, [])
   const g = useMemo(() => {
     const days = Object.keys(byDay).sort()
     if (!days.length) return null
@@ -36,20 +44,19 @@ export default function LineChart({ byDay, range: r, mode }) {
     for (let i = 0; i <= span; i += k) ticks.push({ x: X(add(r[0], i)), t: dm(add(r[0], i)) })
     const grid = []; for (let v = 0; v <= top; v += st) grid.push({ y: Y(v), v })
     return { pts, ticks, grid, y0: Y(0), path: mono(pts.map(a => [a.x, a.y])), peak: pts.reduce((a, b) => b.v > a.v ? b : a) }
-  }, [byDay, r, mode])
+  }, [byDay, r, mode, W, H])
 
-  if (!g) return <div className="empty" style={{ marginTop: 20 }}>Nenhuma compra neste período.<br />Que tal cadastrar uma nota?</div>
-  const a = hov || g.peak
-  const ex = [...new Set(a.n.map(n => estName(n.est)))].join(', ').slice(0, 22)
+  const a = g && (hov && g.pts.find(p => p.d === hov.d) || g.peak)
+  const ex = g ? [...new Set(a.n.map(n => estName(n.est)))].join(', ').slice(0, 22) : ''
   const move = e => {
     const b = e.currentTarget.getBoundingClientRect(), x = (e.clientX - b.left) / b.width * W
     setHov(g.pts.reduce((p, q) => Math.abs(q.x - x) < Math.abs(p.x - x) ? q : p))
   }
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ marginTop: 14 }}>
+  const body = !g ? <div className="empty" style={{ margin: 0 }}>Nenhuma compra neste período.<br />Que tal cadastrar uma nota?</div> : (
+    <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ position: 'absolute', inset: 0 }}>
       <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4A6B3E" stopOpacity=".28" /><stop offset="1" stopColor="#4A6B3E" stopOpacity="0" /></linearGradient></defs>
-      {g.grid.map(t => (<g key={t.v}><line x1={L} x2={W - R} y1={t.y} y2={t.y} stroke="#d6d2c0" strokeDasharray="3 5" /><text x={L - 10} y={t.y + 4} textAnchor="end" fontSize="12" fill="#6B665A">{t.v ? 'R$ ' + t.v : 0}</text></g>))}
-      {g.ticks.map(t => <text key={t.t} x={t.x} y={H - 10} textAnchor="middle" fontSize="12" fill="#6B665A">{t.t}</text>)}
+      {g.grid.map(t => (<g key={t.v}><line x1={L} x2={W - R} y1={t.y} y2={t.y} stroke="#d6d2c0" strokeDasharray="3 5" /><text x={L - 10} y={t.y + 4} textAnchor="end" fontSize="14" fill="#6B665A">{t.v ? 'R$ ' + t.v : 0}</text></g>))}
+      {g.ticks.map(t => <text key={t.t} x={t.x} y={H - 10} textAnchor="middle" fontSize="14" fill="#6B665A">{t.t}</text>)}
       <path d={`${g.path} L${g.pts.at(-1).x},${g.y0} L${g.pts[0].x},${g.y0}Z`} fill="url(#ga)" />
       <path d={g.path} fill="none" stroke="#2E4429" strokeWidth="2.6" />
       {g.pts.map(p => <circle key={p.d} cx={p.x} cy={p.y} r="4" fill="#F3EFE3" stroke="#2E4429" strokeWidth="2" />)}
@@ -57,11 +64,12 @@ export default function LineChart({ byDay, range: r, mode }) {
       <circle cx={a.x} cy={a.y} r="7" fill="#2E4429" stroke="#F3EFE3" strokeWidth="3" />
       <g transform={`translate(${a.x + (a.x > 400 ? -212 : 20)},${Math.max(4, a.y - 6)})`}>
         <rect width="192" height="74" rx="12" fill="#2E4429" />
-        <text x="16" y="24" fontSize="11.5" fill="#cfd8c0">{dm(a.d)}</text>
+        <text x="16" y="24" fontSize="12" fill="#cfd8c0">{dm(a.d)}</text>
         <text x="16" y="48" fontSize="20" fontFamily="Fraunces,serif" fontWeight="600" fill="#F3EFE3">{brl(a.v)}</text>
-        <text x="16" y="65" fontSize="11.5" fill="#cfd8c0">{a.n.length} compra{a.n.length > 1 ? 's' : ''} · {ex}</text>
+        <text x="16" y="65" fontSize="12" fill="#cfd8c0">{a.n.length} compra{a.n.length > 1 ? 's' : ''} · {ex}</text>
       </g>
       <rect x="0" y="0" width={W} height={H} fill="transparent" onMouseMove={move} onMouseLeave={() => setHov(null)} />
     </svg>
   )
+  return <div ref={wrap} style={{ position: 'relative', flex: 1, minHeight: 300, marginTop: 14 }}>{body}</div>
 }

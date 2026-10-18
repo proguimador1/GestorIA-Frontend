@@ -24,10 +24,10 @@ export default function Notas() {
       <FilterBar chips />
       <div className="card mt">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <div><div className="mono lab">Histórico de notas</div><div className="lab" style={{ fontSize: 13, marginTop: 8 }}>Toque numa nota para ver os itens comprados</div></div>
+          <div><div className="mono lab">Histórico de notas</div><div className="lab" style={{ fontSize: 14, marginTop: 8 }}>Toque numa nota para ver os itens comprados</div></div>
           <input style={{ maxWidth: 380, borderRadius: 20 }} placeholder="Buscar item, nota ou estabelecimento" value={F.q} onChange={e => setF({ q: e.target.value })} />
         </div>
-        <div className="lab" style={{ fontSize: 12, margin: '10px 0 14px', textAlign: 'right' }}>
+        <div className="lab" style={{ fontSize: 14, margin: '10px 0 14px', textAlign: 'right' }}>
           Buscando em: {F.all ? 'todo o histórico' : fin.lab()} · {F.cat || 'todas as categorias'} · {F.est ? estName(F.est) : 'todos os estabelecimentos'}
         </div>
         {base.length ? (<>
@@ -37,11 +37,11 @@ export default function Notas() {
               {base.map(n => (
                 <Fragment key={n.id}>
                   <tr className="hov" onClick={() => setF({ open: F.open === n.id ? null : n.id })} style={F.open === n.id ? { background: '#ece8d9' } : undefined}>
-                    <td className="mono" style={{ fontSize: 12.5 }}>{dmy(n.date)}</td>
-                    <td className="mono lab" style={{ fontSize: 12.5 }}>{n.nf || '—'}</td>
+                    <td className="mono" style={{ fontSize: 14 }}>{dmy(n.date)}</td>
+                    <td className="mono lab" style={{ fontSize: 14 }}>{n.nf || '—'}</td>
                     <td><b style={{ fontWeight: 500 }}>{estName(n.est)}</b></td>
                     <td>{n.items.length} itens</td>
-                    <td className="r serif" style={{ fontWeight: 600, fontSize: 15.5 }}>{brl(n.total)}</td>
+                    <td className="r serif" style={{ fontWeight: 600, fontSize: 17 }}>{brl(n.total)}</td>
                     <td className="r lab">{F.open === n.id ? '▴' : '▾'}</td>
                   </tr>
                   {F.open === n.id && (
@@ -64,7 +64,7 @@ export default function Notas() {
           </table>
           <div className="lab" style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 16 }}>
             <span>{base.length} notas · {sum(base.map(n => n.items.length))} itens</span>
-            <b className="serif" style={{ color: 'var(--ink)', fontSize: 16 }}>Total {brl(sum(base.map(n => n.total)))}</b>
+            <b className="serif" style={{ color: 'var(--ink)', fontSize: 17 }}>Total {brl(sum(base.map(n => n.total)))}</b>
           </div>
         </>) : (
           <div className="empty">Nenhum resultado neste período.{!F.all && <><br /><span className="sc" onClick={() => setF({ all: true })}>Buscar em todo o histórico?</span></>}</div>

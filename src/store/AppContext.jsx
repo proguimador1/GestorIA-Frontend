@@ -1,8 +1,9 @@
 // Estado global: dados persistentes (S), filtros da interface (F), rascunho da nota, chat, aviso e modal.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { SEED_NOTES } from '../data/seed.js'
+import { SEED_NOTES, colorOf } from '../data/seed.js'
+import { useAuth } from './AuthContext.jsx'
 import { createFinance } from '../lib/finance.js'
-import { brl, sum, today } from '../lib/utils.js'
+import { add, brl, sum, today } from '../lib/utils.js'
 
 const KEY = 'gestoria.v1'
 const fresh = () => ({ notes: structuredClone(SEED_NOTES), catalog: 128, used: [], user: { name: 'Marina Duarte', email: 'marina@exemplo.com' } })
@@ -13,10 +14,10 @@ const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
 
 export function AppProvider({ children }) {
+  const { user } = useAuth()
   const [S, setS] = useState(load)
-  const [F, setFState] = useState({ mode: 'month', anchor: today(), cat: '', est: '', tab: 'visao', line: 'dia', bar: 'total', q: '', all: false, open: null })
+  const [F, setFState] = useState({ mode: 'month', anchor: today(), from: add(today(), -29), to: today(), cat: '', est: '', tab: 'visao', line: 'dia', bar: 'total', q: '', all: false, open: null })
   const [draft, setDraft] = useState(null)
-  const [cadTab, setCadTab] = useState('webcam')
   const [chat, setChat] = useState(WELCOME)
   const [toastMsg, setToastMsg] = useState(null)
   const [modal, setModal] = useState(null)
@@ -24,8 +25,13 @@ export function AppProvider({ children }) {
   const timer = useRef()
 
   useEffect(() => { localStorage.setItem(KEY, JSON.stringify(S)) }, [S])
+  // Nome e e-mail da conta autenticada passam a ser os dados do perfil.
+  useEffect(() => {
+    if (user?.email) setS(s => ({ ...s, user: { name: user.nome || s.user.name, email: user.email } }))
+  }, [user?.email, user?.nome])
   const setF = useCallback(p => setFState(f => ({ ...f, ...p })), [])
   const fin = useMemo(() => createFinance(S, F), [S, F])
+  const catColor = useCallback(c => colorOf(c, fin.allCats()), [fin])
 
   const toast = useCallback(m => { setToastMsg(m); clearTimeout(timer.current); timer.current = setTimeout(() => setToastMsg(null), 2600) }, [])
   const openModal = useCallback(node => setModal(node), [])
@@ -44,6 +50,6 @@ export function AppProvider({ children }) {
   }
   const resetAll = () => { if (window.confirm('Restaurar os dados de demonstração?')) { setS(fresh()); toast('Dados restaurados') } }
 
-  const value = { S, setS, F, setF, fin, draft, setDraft, cadTab, setCadTab, chat, setChat, toast, toastMsg, modal, openModal, closeModal, syncing, confirmNote, resetAll }
+  const value = { S, setS, F, setF, fin, draft, setDraft, catColor, chat, setChat, toast, toastMsg, modal, openModal, closeModal, syncing, confirmNote, resetAll }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

@@ -1,17 +1,18 @@
 import { useNavigate } from 'react-router-dom'
 import LineChart from '../components/LineChart.jsx'
-import Donut, { col } from '../components/Donut.jsx'
+import Donut from '../components/Donut.jsx'
 import { useApp } from '../store/AppContext.jsx'
 import { EST } from '../data/seed.js'
 import { brl, dm, estName, pct, sum } from '../lib/utils.js'
 
 export const Delta = ({ a, b }) => b ? <span className={a >= b ? 'up' : 'dn'}>{a >= b ? '▲' : '▼'} {pct(Math.abs(a / b - 1) * 100)}</span> : '—'
-const Kpi = ({ label, value, sub, hl }) => <div className={'card kpi' + (hl ? ' hl' : '')}><div className="mono lab">{label}</div><div className="v">{value}</div><div className="s">{sub}</div></div>
+const Kpi = ({ label, value, sub, hl }) => <div className={'card kpi' + (hl ? ' hl' : '')}><div className="kt">{label}</div><div className="v">{value}</div><div className="s">{sub}</div></div>
 const Tog = ({ opts, val, onSel }) => <div className="tog">{opts.map(([k, t]) => <span key={k} className={val === k ? 'on' : ''} onClick={() => onSel(k)}>{t}</span>)}</div>
+const Head = ({ title, sub, children }) => (<><div className="ct">{title}</div><div className="cs">{sub}</div>{children && <div style={{ marginTop: 16 }}>{children}</div>}</>)
 
 // Aba "Visão geral": indicadores, evolução, estabelecimentos, categorias e destaques.
 export default function Visao() {
-  const { F, setF, fin } = useApp()
+  const { F, setF, fin, catColor } = useApp()
   const nav = useNavigate()
   const r = fin.range(), pr = fin.prevRange(), pl = fin.prevLab()
   const it = fin.items(r), tot = sum(it.map(i => i.total)), nn = new Set(it.map(i => i.n.id)).size
@@ -33,40 +34,39 @@ export default function Visao() {
   const byDay = fin.byDay(r), top = Object.entries(byDay).sort((a, b) => b[1].v - a[1].v)[0]
 
   const ins = []
-  if (catD[0]) ins.push({ c: col(catD[0][0]), t: `${catD[0][0]} é a maior fatia do período: ${pct(catD[0][1] / cTot * 100)} do gasto, ou ${brl(catD[0][1])}.`, l: 'Ver itens', go: () => setF({ cat: catD[0][0] }) })
-  if (gr) ins.push({ c: col(gr[0]), t: `${gr[0]} ${gr[1] >= 0 ? 'subiu' : 'caiu'} ${pct(Math.abs(gr[1]) * 100)} em relação a ${pl}.${gr[1] > 0 ? ' É a categoria que mais cresceu.' : ''}`, l: 'Ver itens', go: () => setF({ cat: gr[0] }) })
+  if (catD[0]) ins.push({ c: catColor(catD[0][0]), t: `${catD[0][0]} é a maior fatia do período: ${pct(catD[0][1] / cTot * 100)} do gasto, ou ${brl(catD[0][1])}.`, l: 'Ver itens', go: () => setF({ cat: catD[0][0] }) })
+  if (gr) ins.push({ c: catColor(gr[0]), t: `${gr[0]} ${gr[1] >= 0 ? 'subiu' : 'caiu'} ${pct(Math.abs(gr[1]) * 100)} em relação a ${pl}.${gr[1] > 0 ? ' É a categoria que mais cresceu.' : ''}`, l: 'Ver itens', go: () => setF({ cat: gr[0] }) })
   if (top) ins.push({ c: '#E3A53A', t: `O dia mais caro foi ${dm(top[0])}: ${brl(top[1].v)} ${top[1].n.length === 1 ? 'em uma única compra, no ' + estName(top[1].n[0].est) : 'em ' + top[1].n.length + ' compras'}.`, l: 'Ver nota', go: () => { setF({ open: top[1].n[0].id }); nav('/notas') } })
+  const cmp = `${dm(pr[0])} a ${dm(pr[1])}`
 
   return (
     <>
       <div className="row mt">
-        <Kpi hl label="Total do período" value={brl(tot)} sub={`${new Set(it.map(i => i.n.est)).size} estabelecimentos · ${fin.lab()}`} />
-        <Kpi label={'Contra ' + pl} value={<Delta a={tot} b={pt} />} sub={pt ? 'anterior: ' + brl(pt) : 'sem dados anteriores'} />
-        <Kpi label="Compras registradas" value={nn} sub={pn ? (nn >= pn ? '▲ ' + (nn - pn) + ' a mais' : '▼ ' + (pn - nn) + ' a menos') + ' que em ' + pl : '—'} />
-        <Kpi label="Valor médio por compra" value={brl(avg)} sub={pavg ? <><Delta a={avg} b={pavg} /> contra {pl}</> : '—'} />
+        <Kpi hl label="Total gasto no período" value={brl(tot)} sub={`${new Set(it.map(i => i.n.est)).size} estabelecimentos · ${fin.lab()}`} />
+        <Kpi label="Variação do gasto" value={<Delta a={tot} b={pt} />} sub={pt ? `contra ${pl} (${cmp}): ${brl(pt)}` : `sem dados em ${cmp}`} />
+        <Kpi label="Compras registradas" value={nn} sub={pn ? `${nn === pn ? 'igual a' : nn > pn ? '▲ ' + (nn - pn) + ' a mais que' : '▼ ' + (pn - nn) + ' a menos que'} ${pl} (${pn})` : `sem dados em ${cmp}`} />
+        <Kpi label="Valor médio por compra" value={brl(avg)} sub={pavg ? <><Delta a={avg} b={pavg} /> contra {pl} ({brl(pavg)})</> : `sem dados em ${cmp}`} />
       </div>
 
       <div className="row mt" style={{ alignItems: 'stretch' }}>
-        <div className="card" style={{ width: 640, flex: 'none' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-            <div><div className="mono lab">Evolução de gastos</div><div className="lab" style={{ fontSize: 13, marginTop: 8, fontFamily: "'Instrument Sans'" }}>Cada ponto é um dia com compra · valores em R$</div></div>
+        <div className="card" style={{ flex: '0 0 52%', minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <Head title="Evolução dos gastos" sub="Quanto você gastou em cada dia com compra, em R$">
             <Tog opts={[['dia', 'Por dia'], ['acum', 'Soma acumulada']]} val={F.line} onSel={v => setF({ line: v })} />
-          </div>
+          </Head>
           <LineChart byDay={byDay} range={r} mode={F.line} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 26 }}>
           <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, gap: 10 }}>
-              <div className="mono lab">Total por estabelecimento</div>
+            <Head title="Total gasto por estabelecimento" sub="Quanto foi gasto em cada mercado e a média por compra">
               <Tog opts={[['total', 'Total'], ['media', 'Média por compra']]} val={F.bar} onSel={v => setF({ bar: v })} />
-            </div>
-            <div className="scr" style={{ maxHeight: bars.length > 3 ? 330 : 'none', paddingRight: 12 }}>
+            </Head>
+            <div className="scr" style={{ maxHeight: bars.length > 3 ? 330 : 'none', paddingRight: 12, marginTop: 20 }}>
               {bars.map(b => (
                 <div key={b.e.id} className="hov" onClick={() => setF({ est: F.est === b.e.id ? '' : b.e.id })} style={{ marginBottom: 20, opacity: F.est && F.est !== b.e.id ? .45 : 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}><b style={{ fontSize: 15 }}>{b.e.name}</b><span className="serif" style={{ fontWeight: 600, fontSize: 19 }}>{brl(b[key])}</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}><b style={{ fontSize: 17 }}>{b.e.name}</b><span className="serif" style={{ fontWeight: 600, fontSize: 20 }}>{brl(b[key])}</span></div>
                   <div style={{ height: 16, borderRadius: 8, background: '#e5e1d0', marginTop: 8 }}><div style={{ height: 16, borderRadius: 8, width: (b[key] / bm * 100) + '%', background: 'var(--g)' }} /></div>
-                  <div className="lab" style={{ fontSize: 12, marginTop: 7 }}>{b.n} compra{b.n > 1 ? 's' : ''} {fin.phrase()} · {brl(b.m)} por compra</div>
+                  <div className="lab" style={{ fontSize: 14, marginTop: 7 }}>{b.n} compra{b.n > 1 ? 's' : ''} {fin.phrase()} · {brl(b.m)} por compra</div>
                 </div>
               ))}
               {!bars.length && <div className="lab">Sem compras no período.</div>}
@@ -74,25 +74,25 @@ export default function Visao() {
           </div>
 
           <div className="card" style={{ flex: 1 }}>
-            <div className="mono lab" style={{ marginBottom: 8 }}>Consumo por categoria alimentar</div>
+            <Head title="Consumo por categoria alimentar" sub="Quanto cada categoria representa do total gasto" />
             {catD.length ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 22, flexWrap: 'wrap' }}>
-                <div style={{ flex: 'none' }}><Donut data={catD} tot={cTot} sel={F.cat} onSel={v => setF({ cat: v })} /></div>
-                <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginTop: 20 }}>
+                <div style={{ flex: 'none' }}><Donut data={catD} tot={cTot} sel={F.cat} color={catColor} onSel={v => setF({ cat: v })} /></div>
+                <div className="leg" style={{ flex: 1, minWidth: 0 }}>
                   {catD.map(([c, v]) => (
-                    <div key={c} className="hov" onClick={() => setF({ cat: F.cat === c ? '' : c })} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 0', borderTop: '1px solid var(--line)' }}>
-                      <i className="dot" style={{ background: col(c) }} /><span style={{ flex: 1, fontWeight: 500 }}>{c}</span><b style={{ width: 42 }}>{pct(v / cTot * 100)}</b><span className="lab" style={{ width: 88, textAlign: 'right' }}>{brl(v)}</span>
+                    <div key={c} className="legrow" onClick={() => setF({ cat: F.cat === c ? '' : c })}>
+                      <i className="dot" style={{ background: catColor(c) }} /><span title={c}>{c}</span><b>{pct(v / cTot * 100)}</b><span className="lab" style={{ textAlign: 'right' }}>{brl(v)}</span>
                     </div>
                   ))}
                 </div>
               </div>
-            ) : <div className="lab">Sem dados.</div>}
+            ) : <div className="lab" style={{ marginTop: 20 }}>Sem dados.</div>}
           </div>
         </div>
       </div>
 
       <div className="card mt">
-        <div className="mono lab" style={{ marginBottom: 20 }}>O que chamou atenção · {fin.lab()}</div>
+        <div className="ct" style={{ marginBottom: 20 }}>O que chamou atenção</div>
         <div className="row" style={{ gap: 36 }}>
           {ins.map((i, k) => <div key={k} className="ins"><i className="dot" style={{ background: i.c }} /><p>{i.t}<small onClick={i.go}>{i.l}</small></p></div>)}
           {!ins.length && <span className="lab">Cadastre notas para ver destaques.</span>}
