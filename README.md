@@ -58,6 +58,10 @@ gestoria/
 ├── index.html
 ├── package.json
 ├── vite.config.js
+├── scripts/
+│   ├── gerar-base.mjs
+│   ├── xml-para-json.mjs
+│   └── validar-notas.mjs
 ├── .gitignore
 ├── README.md
 └── src/
@@ -67,7 +71,8 @@ gestoria/
     │   ├── base.css
     │   └── components.css
     ├── data/
-    │   └── seed.js
+    │   ├── seed.js
+    │   └── notas.json
     ├── lib/
     │   ├── utils.js
     │   ├── finance.js
@@ -104,7 +109,7 @@ gestoria/
 ### Raiz
 
 - **`index.html`**: documento base, com a `<div id="root">`, as fontes e o ponto de entrada `src/main.jsx`.
-- **`package.json`**: dependências e scripts (`dev`, `build`, `preview`).
+- **`package.json`**: dependências e scripts (`dev`, `build`, `preview`, `dados`, `validar`, `gerar-base`).
 - **`vite.config.js`**: ativa o plugin do React e define `base: './'`.
 
 ### `src/`
@@ -119,19 +124,22 @@ gestoria/
 
 ### `src/data/`
 
-- **`seed.js`**: dados de demonstração e configuração: `APP_TODAY` (data tratada como hoje, `'2026-08-29'`; `null` usa a data real), `EST` (estabelecimentos), `CATS` (cores das categorias), `SEED_NOTES` (12 notas de agosto e 11 de julho de 2026) e `SAMPLES` (3 notas devolvidas pelo leitor de demonstração).
+- **`seed.js`**: lê `notas.json` e monta `EST` (emitentes), `CATS` (cores), `BASE_NOTES`, `APP_TODAY` (último dia da base), `ensureEst` (inclui um mercado novo pelo CNPJ), `PALETTE` e `colorOf`.
+- **`notas.json`**: a base de notas fiscais fictícias (formato na seção 8), usada em Finanças, Notas fiscais e Chatbot. É o único arquivo a trocar para mudar a base.
+- **`nota-teste.xml`**: nota fiscal fictícia "crua" (15 itens, alimentares e não alimentares) que a leitura simulada do Cadastro carrega. Usada apenas no Cadastro (seção 14).
 
 ### `src/lib/` (lógica sem interface)
 
 - **`utils.js`**: formatação de moeda e porcentagem, datas (`add`, `dm`, `dmy`, `today`), nomes de meses, `estName` e `norm`.
-- **`finance.js`**: `createFinance(S, F)` devolve as funções de consulta ligadas aos dados e filtros atuais: `range`, `prevRange`, `lab`, `prevLab`, `phrase`, `notesIn`, `items`, `nTot`, `byDay`, `allCats` e `sheetRows`. Também exporta `shiftAnchor` (setas do período).
+- **`finance.js`**: `createFinance(S, F)` devolve as funções de consulta ligadas aos dados e filtros atuais: `range`, `prevRange`, `lab`, `prevLab`, `phrase`, `notesIn`, `items`, `nTot`, `byDay`, `allCats`, `sheetRows` (aba Detalhada) e `sheetSimple` (aba Simples). Também exporta `shiftAnchor` (setas do período).
 - **`chat.js`**: `chatAnswer` responde às perguntas do chatbot por consultas aos dados. `SUG` guarda as sugestões. Trechos entre `**` viram negrito na tela.
-- **`export.js`**: `exportSheet` gera `GestorIA_AAAA-MM.xlsx` (ou com intervalo de datas para semana e período personalizado), com a aba "Itens" e o total por fórmula. Se a biblioteca falhar, baixa um `.csv`.
+- **`export.js`**: `exportSheet` gera `GestorIA_AAAA-MM.xlsx` (ou com intervalo de datas para semana e período personalizado) com as abas "Detalhada" e "Simples", total por fórmula, formato de moeda e largura de colunas ajustada ao texto. Se a biblioteca falhar, baixa dois `.csv`.
+- **`nfce.js`**: nota do Cadastro: `parseNfceXml` (lê o XML), `toNum`/`fmtNum`/`fmtPreco` (números com vírgula), `totais`, `editarItem` (recalcula valores), `errosItem`, `validarNota`, `categorizar` (ponto de entrada da LLM de categorização) e `paraNotaDoApp`.
 
 ### `src/store/`
 
 - **`AppContext.jsx`**: estado global, acessado por `useApp()`.
-  - `S`: dados persistentes (notas, contador de catálogo, notas de exemplo usadas, usuário), gravados em `localStorage` na chave `gestoria.v1`.
+  - `S`: visão completa dos dados (notas da base, menos as excluídas, mais as cadastradas; `catalog`, a quantidade de produtos diferentes pelo nome; usuário). Só o que o usuário altera é gravado em `localStorage`, na chave `gestoria.v3`: notas cadastradas, notas da base excluídas, mercados novos e perfil.
   - `F`: filtros e estado da interface (período, categoria, estabelecimento, aba, alternadores, busca, nota aberta).
   - `fin`: funções de consulta recalculadas quando `S` ou `F` mudam.
   - `draft`, `catColor` (cor de cada categoria), `chat`, `toast`, `modal` e `syncing`.
@@ -140,12 +148,12 @@ gestoria/
 ### `src/components/`
 
 - **`Sidebar.jsx`**: menu lateral com seis entradas.
-- **`Topbar.jsx`**: logotipo, status de sincronização, contador de itens e menu do perfil (nome, e-mail, números, editar perfil, falar com o chatbot, exportar dados em JSON e restaurar demonstração).
+- **`Topbar.jsx`**: logotipo, status de sincronização, contador de itens catalogados (produtos diferentes, pelo nome, em todas as notas) e menu do perfil (nome, e-mail, números, editar perfil, falar com o chatbot, exportar dados em JSON e restaurar demonstração).
 - **`Overlays.jsx`**: `Modal` e `Toast`.
 - **`PageHead.jsx`**: linha de destaque e título.
 - **`FilterBar.jsx`**: período (Semana, Mês e Personalizado com data inicial e final), setas, atalho "Últimos 30 dias" e filtros de categoria e estabelecimento.
 - **`TabRow.jsx`**: abas, legenda e botão "Gerar planilha" (abre a prévia em modal; em Notas fiscais rola até a prévia da página).
-- **`SheetPreview.jsx`**: prévia da planilha simplificada e botão de download.
+- **`SheetPreview.jsx`**: prévia das abas Detalhada e Simples (alternáveis) e botão de download.
 - **`LineChart.jsx`**: gráfico de linha em SVG com curva monotônica e tooltip.
 - **`Donut.jsx`**: rosca de categorias com segmentos clicáveis.
 - **`Icon.jsx`**: ícones SVG.
@@ -153,7 +161,7 @@ gestoria/
 ### `src/pages/`
 
 - **`Inicio.jsx`**: saudação e três atalhos.
-- **`Cadastro.jsx`**: leitura do QR Code da nota fiscal pela webcam; uma nota por vez, com botão Confirmar itens.
+- **`Cadastro.jsx`**: leitura da nota (webcam ou simulação), tela de confirmação com todos os campos editáveis e classificação alimentar ou não alimentar antes de gravar (seção 14).
 - **`Financas.jsx`**: cabeçalho, abas, filtros e escolha entre Visão geral e Detalhamento.
 - **`FinVisao.jsx`**: indicadores, gráfico de linha, total por estabelecimento, rosca por categoria e destaques em frase.
 - **`FinDetalhamento.jsx`**: "Tabela comparativa de menor preço" (com rolagem vertical e horizontal), frase de análise e atalho para as notas.
@@ -192,13 +200,13 @@ As rotas de Início em diante exigem sessão; sem ela, o usuário é levado ao l
 { name, cat, qty, unit, unitPrice, total, storage }   // storage: geladeira, despensa ou freezer
 
 // Estabelecimento
-{ id, name, cnpj, f }                                  // f: fator usado só na geração dos dados
+{ id, name, cnpj }                                     // s1 a s4
 
 // Objeto persistido (S)
-{ notes: [...], catalog: 128, used: [...], user: { name, email } }
+{ added: [...], removed: [...], estNovos: [...], user: { name, email } }   // persistido (gestoria.v3)
 ```
 
-Categorias com cor própria: Hortifruti, Laticínios, Mercearia e Carnes. As demais usam a cor de "Outros".
+Categorias: Mercearia, Laticínios, Carnes, Bebidas, Padaria e Não alimentício (e Hortifruti, quando houver). As demais usam a próxima cor livre de `PALETTE`. O gráfico "Consumo por categoria alimentar" não inclui itens "Não alimentício", e uma observação informa o valor deixado de fora.
 
 ---
 
@@ -221,33 +229,92 @@ Clicar numa barra, numa fatia ou numa linha da legenda ativa o filtro. Clicar de
 Lista os itens comprados em mais de um estabelecimento, com o último preço unitário de cada. O menor recebe destaque verde, e a coluna "Melhor preço" informa o estabelecimento mais barato e quanto fica abaixo da média, em reais. Tem rolagem vertical (a partir de 6 linhas) e horizontal (mais de 3 estabelecimentos), com a primeira e a última colunas fixas.
 
 ### Planilha
-Modelo único (simplificado), aba "Itens", com as colunas Data, Estabelecimento, Item, Categoria, Quantidade, Unidade, Preço unitário e Total do item, e linha final de total. Reflete o período e os filtros ativos.
+Arquivo `.xlsx` com duas abas, ambas com linha final de total (fórmula `SUM`), valores em formato de moeda e colunas com largura ajustada ao maior texto. As duas refletem o período e os filtros ativos. A prévia mostra as duas abas antes de baixar.
+
+| Aba | Colunas |
+|---|---|
+| Detalhada | Data, Estabelecimento, Item, Categoria, Quantidade, Unidade, Preço unitário, Total do item (uma linha por item) |
+| Simples | Data, Estabelecimento, Quantidade de itens, Categoria principal, Total da compra (uma linha por compra) |
+
+A categoria principal é a de maior gasto naquela compra (empate: ordem alfabética). Com filtro de categoria ou estabelecimento ativo, a aba Simples considera só os itens filtrados.
 
 ### Chatbot
 Responde por regras e consultas aos dados, sem modelo de linguagem. Entende: gasto total (mês ou semana), gasto por categoria, onde gastou mais, última compra, dia mais caro, quantidade de compras e onde comprar um item mais barato. O histórico da conversa fica em memória e se perde ao recarregar.
 
 ---
 
-## 8. Dados de demonstração
+## 8. Base de dados (NFC-e fictícias) e como trocá-la
 
-- **Agosto de 2026:** 12 notas, total de R$ 1.519,00. Pão de Açúcar R$ 703,00, São Luiz R$ 468,00, Feira R$ 278,00 e Mercado Bom Preço R$ 70,00. Hortifruti R$ 638,00, Mercearia R$ 456,00 e Laticínios R$ 425,00.
-- **Julho de 2026:** 11 notas, total de R$ 1.355,00, usadas nas comparações.
-- **Notas de exemplo do Cadastro:** três, cada uma lida uma vez. "Restaurar dados de demonstração" libera todas novamente.
+Toda a base fica em **`src/data/notas.json`**. Para usar outra base, basta substituir esse arquivo e conferir com `npm run validar`. Emitentes, categorias e a data de "hoje" (último dia da base) são lidos do próprio JSON, sem alterar código.
+
+### Base atual
+1.000 notas fictícias de alimentos (4.575 itens), de 01/08/2024 a 30/09/2026, de 8 emitentes com CNPJ, 64 produtos e unidades un, kg e dz (quantidades fracionadas em kg). Usada em Finanças, Notas fiscais e Chatbot.
+
+Gerada por `npm run gerar-base` (`scripts/gerar-base.mjs`), sempre igual por usar semente fixa:
+- Cada mês recebe uma quantidade de notas proporcional aos seus dias (36 a 40 notas por mês).
+- Rotina de uma família: uma compra grande por semana (sábado, 11 a 16 itens) e reposições rápidas nos outros dias (2 a 5 itens).
+- Gasto mensal entre cerca de R$ 1.700 e R$ 2.500, sem meses muito destoantes.
+- Preços de referência de setembro/2026, inflação de cerca de 4,5% ao ano para trás e variação de preço entre mercados de até 10%.
+
+### Formato do `notas.json`
+```json
+{
+  "emitentes": [
+    { "id": "s1", "nome": "Mercantil São José Ltda.", "cnpj": "12.345.678/0001-95" }
+  ],
+  "notas": [
+    {
+      "id": "nfce-000001",
+      "numero": "000001",
+      "codigo": "NFCT-000001",
+      "chave": "90000000000000000000000000000000000000000001",
+      "emitente": "s1",
+      "data": "2026-06-16",
+      "pagamento": "Em espécie",
+      "total": 85.32,
+      "itens": [
+        { "nome": "Chocolate em pó 200 g", "categoria": "Mercearia", "quantidade": 3, "unidade": "un", "valorUnitario": 8.26, "valorTotal": 24.78 }
+      ]
+    }
+  ]
+}
+```
+
+Regras (conferidas por `npm run validar`):
+- `id` e `numero` únicos em cada nota; `emitente` deve ser um `id` existente em `emitentes`.
+- `data` no formato `AAAA-MM-DD`; `pagamento` preenchido.
+- `unidade` entre `un`, `kg`, `g`, `l`, `ml` e `dz` (minúsculas).
+- `quantidade`, `valorUnitario` e `valorTotal` maiores que zero; `valorTotal` igual a quantidade vezes valor unitário (diferença de até R$ 0,01); `total` igual à soma dos `valorTotal`.
+- `categoria` é um texto livre. Categorias com cor própria: Hortifruti, Mercearia, Laticínios, Carnes, Bebidas, Padaria, Congelados e Não alimentício; as demais recebem cores da paleta automaticamente. Itens "Não alimentício" ficam fora do gráfico de categorias alimentares.
+- Opcional por item: `armazenamento` (`geladeira`, `despensa` ou `freezer`). Sem ele, Laticínios e Hortifruti vão para a geladeira, Carnes e Congelados para o freezer e o restante para a despensa.
+
+### Comandos
+| Comando | O que faz |
+|---|---|
+| `npm run gerar-base` | Gera novamente `src/data/notas.json` (1.000 notas). Use `npm run gerar-base -- 1500` para outra quantidade. |
+| `npm run validar` | Valida `src/data/notas.json`. Use `npm run validar -- outro.json` para validar outro arquivo. |
+| `npm run dados -- <pasta-com-xmls>` | Converte uma pasta de XMLs de NFC-e em `notas.json`. As categorias são definidas por nome de produto em `REGRAS`, dentro de `scripts/xml-para-json.mjs`. |
+
+### Outros pontos
+- As notas cadastradas pelo usuário e as exclusões ficam no `localStorage` (chave `gestoria.v3`); a base não é copiada para lá. Se trocar o `notas.json`, use "Restaurar dados de demonstração" para limpar exclusões antigas.
+- **Campos do modelo oficial da NFC-e que a base não tem:** endereço do emitente, código do item, descontos, valor pago e hora de emissão. Esses campos existem na nota de teste do Cadastro (`nota-teste.xml`).
 
 ---
 
 ## 9. Pontos de integração com um backend
 
-- **`readNote()` em `src/pages/Cadastro.jsx`:** devolve uma nota de `SAMPLES`. Substituir pela consulta da NFC-e a partir do QR Code ou da chave de acesso.
+- **`lerNota()` em `src/pages/Cadastro.jsx`:** carrega `nota-teste.xml`. Substituir pela consulta da NFC-e a partir do QR Code; o resultado deve passar por `parseNfceXml` (ou montar o mesmo objeto).
+- **`categorizar()` em `src/lib/nfce.js`:** hoje classifica os itens alimentares por palavras-chave. É aqui que entra a chamada à LLM de categorização.
 - **`src/store/AppContext.jsx`:** `S` e a gravação em `localStorage` representam a camada de dados. Trocar por chamadas de API mantém as telas intactas.
-- **`src/data/seed.js`:** pode ser removido quando houver dados reais.
+- **`src/data/seed.js` e `notas.json`:** substituir pela leitura da API quando houver dados reais.
 - **Autenticação:** não existe; o usuário é fixo.
 
 ---
 
 ## 10. Limitações conhecidas
 
-- A leitura real do QR Code da NFC-e não está implementada; a nota exibida vem de uma base de exemplo.
+- A leitura real do QR Code da NFC-e não está implementada; a leitura simulada carrega sempre `nota-teste.xml`.
+- Os descontos ficam gravados na nota, mas as análises somam o valor dos itens (sem ratear o desconto).
 - A tela Notas fiscais tem apenas a visão por nota.
 - Os dados ficam só no navegador atual.
 - O `xlsx` 0.18.5 é a última versão publicada no npm; versões mais novas da biblioteca são distribuídas pelo site oficial do SheetJS.
@@ -258,7 +325,7 @@ Responde por regras e consultas aos dados, sem modelo de linguagem. Entende: gas
 
 - **Nova tela:** criar `src/pages/Nova.jsx`, registrar a rota em `src/App.jsx` e a entrada em `NAV` (`src/components/Sidebar.jsx`).
 - **Nova categoria:** incluir a cor em `CATS` (`seed.js`) (categorias novas recebem automaticamente a próxima cor livre de `PALETTE`, com 30 cores reservadas).
-- **Novo estabelecimento:** incluir um objeto em `EST` (`seed.js`).
+- **Novo estabelecimento:** incluir o emitente em `emitentes` e usar o `id` dele nas notas (`notas.json`).
 - **Nova pergunta do chatbot:** incluir uma condição em `chatAnswer()` (`src/lib/chat.js`).
 - **Paleta:** variáveis no início de `src/styles/base.css`.
 
@@ -304,3 +371,22 @@ O projeto vem com `VITE_MOCK_AUTH=true` para funcionar de imediato. Com a API no
 O link de recuperação enviado por e-mail deve apontar para `https://SEU_SITE/#/recuperar-senha/{uid}/{token}` (ajuste o modelo de URL no backend, por causa do `#`).
 
 Sessão: tokens em `localStorage` (`@GestorIA:token`, `@GestorIA:refresh` e `@GestorIA:user`). O botão "Sair da conta" está no menu do perfil.
+
+---
+
+## 14. Cadastro de nota (confirmação e classificação)
+
+Fluxo em três etapas, guardado no estado global (`draft`), por isso sobrevive à troca de tela:
+
+1. **Leitura:** a webcam aguarda o QR Code; "Simular leitura da nota" carrega `src/data/nota-teste.xml`.
+2. **Pop-up de confirmação (`draft.stage = 'editar'`):** abre sobre a tela de Cadastro, com o fundo translúcido, para o usuário conferir a leitura. Tem duas células, ambas editáveis:
+   - **Estabelecimento:** razão social, CNPJ, endereço, número da nota, data de emissão, protocolo de autorização e chave de acesso.
+   - **Itens da nota**, na ordem do XML: descrição, quantidade, unidade, valor unitário e valor total. Itens podem ser excluídos (×) ou incluídos na linha "+" (obrigatórios: nome, quantidade, unidade e valor unitário; o total é calculado). Editar quantidade ou valor unitário recalcula o total do item; editar o total recalcula o valor unitário. Números aceitam vírgula decimal (1,235).
+   - Pagamento, descontos, tributos, consumidor e demais informações gerais continuam vindo do XML, mas não aparecem nem são editados no pop-up.
+   - "Confirmar nota" valida razão social, CNPJ (14 dígitos), número, data, chave de acesso (44 dígitos) e todos os itens. "Cancelar" (botão vermelho) fecha o pop-up e descarta a leitura.
+3. **Classificação (`draft.stage = 'classificar'`):** itens em colunas (Item, Qtd, Un, Valor unit., Valor total, Tipo). A etiqueta alterna entre **ALIMENTAR** (verde) e **NÃO ALIMENTAR** (vermelho). "Confirmar itens" grava a nota: os itens alimentares recebem categoria por `categorizar()` (futura LLM) e os demais ficam como "Não alimentício". Nota com a mesma chave de acesso de outra já cadastrada é recusada. "Descartar" (vermelho) abandona a nota.
+
+Botões de cancelar e descartar usam a classe `.btn.cancel` (vermelho), padrão para toda a aplicação.
+
+### `nota-teste.xml`
+NFC-e fictícia baseada no modelo oficial do DANFE NFC-e, com 15 itens (10 alimentares e 5 não alimentares), descrições abreviadas como impressas pelo caixa, desconto, pagamento em dinheiro com troco e chave de acesso com dígito verificador. Campo criado só para o React: `<alimenticio>sim|nao</alimenticio>` em cada item, a sugestão inicial da etiqueta.

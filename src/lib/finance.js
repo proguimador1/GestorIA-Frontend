@@ -41,7 +41,21 @@ export function createFinance(S, F) {
   const allCats = () => [...new Set(S.notes.flatMap(n => n.items.map(i => i.cat)))]
   const sheetRows = () => items(range()).sort((a, b) => a.n.date < b.n.date ? -1 : 1)
     .map(i => [dmy(i.n.date), estName(i.n.est), i.name, i.cat, i.qty, i.unit, i.unitPrice, i.total])
-  return { range, prevRange, lab, prevLab, phrase, notesIn, items, nTot, byDay, allCats, sheetRows }
+  // Aba "Simples": uma linha por compra (nota) com os itens do período e dos filtros ativos.
+  // Categoria principal = a de maior gasto naquela compra (empate: ordem alfabética).
+  const sheetSimple = () => {
+    const por = new Map()
+    items(range()).forEach(i => {
+      const g = por.get(i.n.id) || { n: i.n, qtd: 0, total: 0, cats: {} }
+      g.qtd++; g.total += i.total; g.cats[i.cat] = (g.cats[i.cat] || 0) + i.total
+      por.set(i.n.id, g)
+    })
+    return [...por.values()].sort((a, b) => a.n.date < b.n.date ? -1 : a.n.date > b.n.date ? 1 : 0).map(g => {
+      const principal = Object.entries(g.cats).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0]
+      return [dmy(g.n.date), estName(g.n.est), g.qtd, principal, Math.round(g.total * 100) / 100]
+    })
+  }
+  return { range, prevRange, lab, prevLab, phrase, notesIn, items, nTot, byDay, allCats, sheetRows, sheetSimple }
 }
 
 // Nova data de referência ao usar as setas do período.

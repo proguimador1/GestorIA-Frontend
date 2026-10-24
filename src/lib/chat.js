@@ -2,7 +2,7 @@
 // Trechos entre ** ** são exibidos em negrito pela tela do chatbot.
 import { add, brl, dm, dmy, estName, norm, pct, sum, today } from './utils.js'
 
-export const SUG = ['Quanto gastei este mês?', 'Quanto gastei esta semana?', 'Gasto por categoria', 'Onde gastei mais?', 'Qual foi a última compra?', 'Onde comprar tomate mais barato?']
+export const SUG = ['Quanto gastei este mês?', 'Quanto gastei esta semana?', 'Gasto por categoria', 'Onde gastei mais?', 'Qual foi a última compra?', 'Onde comprar leite integral mais barato?']
 
 const B = x => `**${x}**`
 
@@ -20,7 +20,9 @@ export function chatAnswer(q, S, fin) {
     return l ? `A última nota é de ${B(dmy(l.date))} no ${B(estName(l.est))}: ${l.items.length} itens, ${B(brl(l.total))}.` : 'Ainda não há notas cadastradas.'
   }
   const names = [...new Set(S.notes.flatMap(x => x.items.map(i => i.name)))]
-  const m = names.find(x => n.includes(norm(x))) || names.find(x => n.includes(norm(x.split(' ')[0])))
+  // Produto citado: o que tiver mais palavras presentes na pergunta (ignora números e medidas)
+  const score = x => norm(x).split(' ').filter(w => w.length > 2 && !/\d/.test(w) && n.includes(w)).length
+  const m = names.map(x => [x, score(x)]).filter(a => a[1] > 0).sort((a, b) => b[1] - a[1])[0]?.[0]
   if (m && /barat|onde|preco|custa|caro/.test(n)) {
     const p = {}
     S.notes.slice().sort((a, b) => a.date < b.date ? -1 : 1).forEach(x => x.items.filter(i => i.name === m).forEach(i => { p[x.est] = i.unitPrice }))

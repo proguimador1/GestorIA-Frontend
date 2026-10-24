@@ -27,7 +27,7 @@ export default function LineChart({ byDay, range: r, mode }) {
   const [{ W, H }, setDim] = useState({ W: 580, H: 420 })
   // O gráfico ocupa todo o espaço disponível do cartão, sem sobrar área vazia.
   useEffect(() => {
-    const ro = new ResizeObserver(([e]) => setDim({ W: Math.max(320, Math.round(e.contentRect.width)), H: Math.max(260, Math.round(e.contentRect.height)) }))
+    const ro = new ResizeObserver(([e]) => setDim({ W: Math.max(320, Math.round(e.contentRect.width)), H: Math.max(220, Math.round(e.contentRect.height)) }))
     ro.observe(wrap.current)
     return () => ro.disconnect()
   }, [])
@@ -71,5 +71,5 @@ export default function LineChart({ byDay, range: r, mode }) {
       <rect x="0" y="0" width={W} height={H} fill="transparent" onMouseMove={move} onMouseLeave={() => setHov(null)} />
     </svg>
   )
-  return <div ref={wrap} style={{ position: 'relative', flex: 1, minHeight: 300, marginTop: 14 }}>{body}</div>
+  return <div ref={wrap} style={{ position: 'relative', flex: 1, minHeight: 220, marginTop: 14 }}>{body}</div>
 }

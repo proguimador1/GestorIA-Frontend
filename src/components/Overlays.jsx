@@ -1,7 +1,17 @@
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useApp } from '../store/AppContext.jsx'
 
 export function Modal() {
   const { modal, closeModal } = useApp()
+  const { pathname } = useLocation()
+  useEffect(() => { closeModal() }, [pathname, closeModal])   // trocar de tela fecha o modal
+  useEffect(() => {
+    if (!modal) return
+    const esc = e => e.key === 'Escape' && closeModal()
+    window.addEventListener('keydown', esc)
+    return () => window.removeEventListener('keydown', esc)
+  }, [modal, closeModal])
   if (!modal) return null
   return (
     <div className="modal" onClick={e => { if (e.target === e.currentTarget) closeModal() }}>

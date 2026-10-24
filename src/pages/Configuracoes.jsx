@@ -3,10 +3,10 @@ import PageHead from '../components/PageHead.jsx'
 import { useApp } from '../store/AppContext.jsx'
 
 export default function Configuracoes() {
-  const { S, setS, toast, resetAll } = useApp()
+  const { S, setUser, toast, resetAll } = useApp()
   const [name, setName] = useState(S.user.name)
   const [email, setEmail] = useState(S.user.email)
-  const salvar = () => { setS(s => ({ ...s, user: { name: name || s.user.name, email } })); toast('Alterações salvas') }
+  const salvar = () => { setUser({ name: name || S.user.name, email }); toast('Alterações salvas') }
   return (
     <>
       <PageHead eyebrow={`Conta · ${S.user.name.split(' ')[0].toUpperCase()}`}>Configurações</PageHead>

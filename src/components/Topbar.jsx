@@ -30,7 +30,7 @@ export default function Topbar() {
     <header className="top" ref={box}>
       <div className="logo">Gestor<b>IA</b></div>
       <div className={'sync' + (syncing ? ' busy' : '')}><i /><span>{syncing ? 'Sincronizando…' : 'Sincronizado'}</span></div>
-      <div className="cnt">{S.catalog} itens catalogados</div>
+      <div className="cnt" title="Produtos diferentes registrados em todas as suas notas fiscais">{S.catalog} itens catalogados</div>
       <div className="av" title="Meu perfil" onClick={() => setOpen(o => !o)}>{u.name[0]}</div>
       {open && (
         <div className="pmenu">

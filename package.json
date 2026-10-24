@@ -3,7 +3,21 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview" },
-  "dependencies": { "axios": "^1.7.9", "react": "^18.3.1", "react-dom": "^18.3.1", "react-router-dom": "^6.26.2", "xlsx": "0.18.5" },
-  "devDependencies": { "@vitejs/plugin-react": "^4.3.1", "vite": "^5.4.8" }
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview", "dados": "node scripts/xml-para-json.mjs", "validar": "node scripts/validar-notas.mjs", "gerar-base": "node scripts/gerar-base.mjs"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "xlsx": "0.18.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "fast-xml-parser": "^5.11.2",
+    "vite": "^5.4.8"
+  }
 }
