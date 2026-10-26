@@ -307,7 +307,7 @@ Regras (conferidas por `npm run validar`):
 - **`categorizar()` em `src/lib/nfce.js`:** hoje classifica os itens alimentares por palavras-chave. É aqui que entra a chamada à LLM de categorização.
 - **`src/store/AppContext.jsx`:** `S` e a gravação em `localStorage` representam a camada de dados. Trocar por chamadas de API mantém as telas intactas.
 - **`src/data/seed.js` e `notas.json`:** substituir pela leitura da API quando houver dados reais.
-- **Autenticação:** não existe; o usuário é fixo.
+- **Autenticação:** integrada à API Django (djoser + JWT), seção 13. As notas e o perfil editado ainda ficam no navegador.
 
 ---
 
@@ -363,12 +363,14 @@ Baseada no código do projeto `GestorIA-Frontend-feature-auth` (API Django com J
 | `VITE_API_URL` | Endereço da API (padrão `http://localhost:8000`). |
 | `VITE_MOCK_AUTH` | `true` usa contas locais de demonstração, sem backend; `false` usa a API. |
 
-O projeto vem com `VITE_MOCK_AUTH=true` para funcionar de imediato. Com a API no ar, troque para `false` e reinicie o `npm run dev`.
+O padrão é `VITE_MOCK_AUTH=false`: é preciso ter o backend (e o Postgres do Docker) rodando em `VITE_API_URL`. Para testar sem backend, troque para `true` e reinicie o `npm run dev`.
 
 ### Endpoints usados (modo API)
 `POST /auth/users/` (criar conta), `POST /auth/jwt/create/` (login), `GET /auth/users/me/` (nome do usuário, opcional), `POST /auth/jwt/logout/`, `POST /auth/users/reset_password/` e `POST /auth/users/reset_password_confirm/`.
 
-O link de recuperação enviado por e-mail deve apontar para `https://SEU_SITE/#/recuperar-senha/{uid}/{token}` (ajuste o modelo de URL no backend, por causa do `#`).
+O link de recuperação enviado por e-mail aponta para `http://localhost:5173/#/recuperar-senha/{uid}/{token}`; o backend já usa o `#` por causa do `HashRouter` (`FRONTEND_DOMAIN` e `FRONTEND_PROTOCOL` no `.env` do backend).
+
+Ao abrir o app, `GET /auth/users/me/` confirma que o token ainda vale; se não valer, a sessão é encerrada. E-mails são normalizados para minúsculas.
 
 Sessão: tokens em `localStorage` (`@GestorIA:token`, `@GestorIA:refresh` e `@GestorIA:user`). O botão "Sair da conta" está no menu do perfil.
 

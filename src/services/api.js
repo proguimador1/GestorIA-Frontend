@@ -41,6 +41,7 @@ api.interceptors.response.use(r => r, error => {
   // Sessão expirada em rota protegida: limpa as chaves e volta ao login (a rota usa hash).
   if (error.response?.status === 401 && localStorage.getItem(KEYS.token) && !PUBLICAS.includes(limpa(error.config?.url))) {
     Object.values(KEYS).forEach(k => localStorage.removeItem(k))
+    window.dispatchEvent(new Event('gestoria:sessao-expirada')) // avisa o AuthContext
     window.location.hash = '#/login'
   }
   return Promise.reject(error)
