@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  NFC-e FICTÍCIA para testar a tela de confirmação do Cadastro (não é documento fiscal válido).
+  Estrutura baseada no DANFE NFC-e do modelo oficial. A nota está "crua": descrições como impressas pelo caixa,
+  ainda sem limpeza ou categorização pela LLM.
+  Campo criado para o React (não existe na NFC-e real): <alimenticio> em cada item, sugestão inicial
+  "sim" ou "nao" que o usuário confirma ou altera antes da categorização.
+-->
+<nfce>
+  <emitente>
+    <razaoSocial>Mercadinho Central Ltda.</razaoSocial>
+    <cnpj>89.012.345/0001-62</cnpj>
+    <endereco>Av. Treze de Maio, 1500, Fátima, Fortaleza, CE</endereco>
+  </emitente>
+  <itens>
+    <item nItem="1">
+      <codigo>1394150</codigo>
+      <descricao>ARROZ BCO T1 CAMIL 1KG</descricao>
+      <quantidade>1</quantidade>
+      <unidade>UN</unidade>
+      <valorUnitario>6.49</valorUnitario>
+      <valorTotal>6.49</valorTotal>
+      <alimenticio>sim</alimenticio>
+    </item>
+    <item nItem="2">
+      <codigo>1513109</codigo>
+      <descricao>FEIJAO CARIOCA KICALDO 1KG</descricao>
+      <quantidade>2</quantidade>
+      <unidade>UN</unidade>
+      <valorUnitario>8.49</valorUnitario>
+      <valorTotal>16.98</valorTotal>
+      <alimenticio>sim</alimenticio>
+    </item>
+    <item nItem="3">
+      <codigo>1621521</codigo>
+      <descricao>LEITE INT ITALAC 1L</descricao>
+      <quantidade>6</quantidade>
+      <unidade>UN</unidade>
+      <valorUnitario>5.99</valorUnitario>
+      <valorTotal>35.94</valorTotal>
+      <alimenticio>sim</alimenticio>
+    </item>
+    <item nItem="4">
+      <codigo>16551</codigo>
+      <descricao>BANANA PRATA KG</descricao>
+      <quantidade>1.235</quantidade>
+      <unidade>KG</unidade>
+      <valorUnitario>6.99</valorUnitario>
+      <valorTotal>8.63</valorTotal>
+      <alimenticio>sim</alimenticio>
+    </item>
+    <item nItem="5">
+      <codigo>16438</codigo>
+      <descricao>TOMATE KG</descricao>
+      <quantidade>0.842</quantidade>
+      <unidade>KG</unidade>
+      <valorUnitario>8.49</valorUnitario>
+      <valorTotal>7.15</valorTotal>
+      <alimenticio>sim</alimenticio>
+    </item>
+    <item nItem="6">
+      <codigo>1180916</codigo>
+      <descricao>DETERG LIQ YPE NEUTRO 500ML</descricao>
+      <quantidade>3</quantidade>
+      <unidade>UN</unidade>
+      <valorUnitario>2.79</valorUnitario>
+      <valorTotal>8.37</valorTotal>
+      <alimenticio>nao</alimenticio>
+    </item>
+    <item nItem="7">
+      <codigo>1642448</codigo>
+      <descricao>PATINHO BOVINO KG</descricao>
+      <quantidade>0.968</quantidade>
+      <unidade>KG</unidade>
+      <valorUnitario>49.90</valorUnitario>
+      <valorTotal>48.30</valorTotal>
+      <alimenticio>sim</alimenticio>
+    </item>
+    <item nItem="8">
+      <codigo>1343955</codigo>
+      <descricao>CAFE MELITTA TRAD 500G</descricao>
+      <quantidade>1</quantidade>
+      <unidade>UN</unidade>
+      <valorUnitario>28.90</valorUnitario>
+      <valorTotal>28.90</valorTotal>
+      <alimenticio>sim</alimenticio>
+    </item>
+    <item nItem="9">
+      <codigo>1248820</codigo>
+      <descricao>SAB PO OMO LAV PERF 800G</descricao>
+      <quantidade>1</quantidade>
+      <unidade>UN</unidade>
+      <valorUnitario>19.90</valorUnitario>
+      <valorTotal>19.90</valorTotal>
+      <alimenticio>nao</alimenticio>
+    </item>
+    <item nItem="10">
+      <codigo>37818</codigo>
+      <descricao>PAO FRANCES KG</descricao>
+      <quantidade>0.412</quantidade>
+      <unidade>KG</unidade>
+      <valorUnitario>16.90</valorUnitario>
+      <valorTotal>6.96</valorTotal>
+      <alimenticio>sim</alimenticio>
+    </item>
+    <item nItem="11">
+      <codigo>1629549</codigo>
+      <descricao>CR DENT COLGATE MAX 90G</descricao>
+      <quantidade>2</quantidade>
+      <unidade>UN</unidade>
+      <valorUnitario>4.99</valorUnitario>
+      <valorTotal>9.98</valorTotal>
+      <alimenticio>nao</alimenticio>
+    </item>
+    <item nItem="12">
+      <codigo>1609971</codigo>
+      <descricao>OVOS BRANCOS DZ</descricao>
+      <quantidade>1</quantidade>
+      <unidade>DZ</unidade>
+      <valorUnitario>13.90</valorUnitario>
+      <valorTotal>13.90</valorTotal>
+      <alimenticio>sim</alimenticio>
+    </item>
+    <item nItem="13">
+      <codigo>1639021</codigo>
+      <descricao>PAPEL HIG NEVE FL DUPLA 12UN</descricao>
+      <quantidade>1</quantidade>
+      <unidade>UN</unidade>
+      <valorUnitario>21.90</valorUnitario>
+      <valorTotal>21.90</valorTotal>
+      <alimenticio>nao</alimenticio>
+    </item>
+    <item nItem="14">
+      <codigo>36757</codigo>
+      <descricao>IOGURTE NAT NESTLE 170G</descricao>
+      <quantidade>4</quantidade>
+      <unidade>UN</unidade>
+      <valorUnitario>3.49</valorUnitario>
+      <valorTotal>13.96</valorTotal>
+      <alimenticio>sim</alimenticio>
+    </item>
+    <item nItem="15">
+      <codigo>1146548</codigo>
+      <descricao>ESPONJA MULTIUSO SCOTCH-BRITE 3UN</descricao>
+      <quantidade>1</quantidade>
+      <unidade>UN</unidade>
+      <valorUnitario>6.49</valorUnitario>
+      <valorTotal>6.49</valorTotal>
+      <alimenticio>nao</alimenticio>
+    </item>
+  </itens>
+  <totais>
+    <quantidadeTotalItens>15</quantidadeTotalItens>
+    <valorTotal>253.85</valorTotal>
+    <descontos>3.50</descontos>
+    <valorAPagar>250.35</valorAPagar>
+  </totais>
+  <pagamento>
+    <formaPagamento>Dinheiro</formaPagamento>
+    <valorPago>260.00</valorPago>
+    <troco>9.65</troco>
+  </pagamento>
+  <tributosTotaisIncidentes>72.95</tributosTotaisIncidentes>
+  <informacoesGerais>
+    <tipoEmissao>EMISSÃO NORMAL</tipoEmissao>
+    <numero>104512</numero>
+    <serie>206</serie>
+    <dataEmissao>2026-09-30</dataEmissao>
+    <horaEmissao>10:42:17</horaEmissao>
+    <via>Via Consumidor</via>
+    <protocoloAutorizacao>223260987654321</protocoloAutorizacao>
+    <dataAutorizacao>2026-09-30</dataAutorizacao>
+    <horaAutorizacao>10:42:19</horaAutorizacao>
+    <ambiente>Ambiente de Produção</ambiente>
+    <versaoXml>4.00</versaoXml>
+  </informacoesGerais>
+  <chaveAcesso>
+    <urlConsulta>http://nfce.sefaz.ce.gov.br/pages/consultaNota.jsf</urlConsulta>
+    <chave>23260989012345000162652060001045121384756120</chave>
+  </chaveAcesso>
+  <consumidor>
+    <cpf>123.456.789-09</cpf>
+    <nome></nome>
+  </consumidor>
+  <informacoesContribuinte>Documento fictício gerado para testes do GestorIA. ICMS destacado exclusivamente para fins de exclusão de seu valor da base de cálculo do PIS e da COFINS.</informacoesContribuinte>
+</nfce>

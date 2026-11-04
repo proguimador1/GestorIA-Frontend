@@ -1,68 +1,50 @@
-import axios from "axios";
+// Cliente HTTP (axios) para a API de autenticação. Baseado no código enviado em GestorIA-Frontend-feature-auth.
+import axios from 'axios'
 
-const api = axios.create({
-  baseURL: "http://localhost:8000",
-});
+export const KEYS = { token: '@GestorIA:token', refresh: '@GestorIA:refresh', user: '@GestorIA:user' }
 
-// Interceptador: Executa antes de qualquer requisição sair do React
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("@GestorIA:token");
+const api = axios.create({ baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000' })
 
-  const rotasPublicas = [
-    "/auth/jwt/create/", // Login
-    "/auth/users/", // Cadastro
-    "/auth/users/reset_password/", // Pedir email de recuperação
-    "/auth/users/reset_password_confirm/", // Enviar nova senha
-  ];
+// Rotas que não recebem o token. Comparação sem barras nas pontas, para tolerar "/x/" e "x".
+const PUBLICAS = ['auth/jwt/create', 'auth/users', 'auth/users/reset_password', 'auth/users/reset_password_confirm']
+const limpa = u => (u || '').replace(/^\/+|\/+$/g, '')
 
-  const isRotaPublica = rotasPublicas.includes(config.url);
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem(KEYS.token)
+  if (token && !PUBLICAS.includes(limpa(config.url))) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
 
-  if (token && !isRotaPublica) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
-});
-
-const ERROR_MESSAGES = {
-  400: "Verifique os dados informados.",
-  403: "Você não tem permissão para essa ação.",
-  404: "Recurso não encontrado.",
-  500: "Erro interno do servidor. Tente novamente mais tarde.",
-};
-
-function extractMessage(error) {
-  const { response } = error;
-
-  if (!response) return "Não foi possível conectar ao servidor.";
-
-  const { status, data } = response;
-
-  if (status === 400 && data && typeof data === "object" && !data.detail) {
-    const primeiraChave = Object.keys(data)[0];
-    const valor = data[primeiraChave];
-    const primeiraMsg = Array.isArray(valor) ? valor[0] : valor;
-    if (primeiraMsg) return primeiraMsg;
-  }
-
-  if (data?.detail) return data.detail;
-
-  return ERROR_MESSAGES[status] || "Ocorreu um erro inesperado.";
+const ERROS = {
+  400: 'Verifique os dados informados.',
+  401: 'E-mail ou senha incorretos.',
+  403: 'Você não tem permissão para essa ação.',
+  404: 'Recurso não encontrado.',
+  500: 'Erro interno do servidor. Tente novamente mais tarde.',
 }
 
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    error.userMessage = extractMessage(error);
+function mensagem(error) {
+  const { response } = error
+  if (!response) return 'Não foi possível conectar ao servidor.'
+  const { status, data } = response
+  if (status === 400 && data && typeof data === 'object' && !data.detail) {
+    const v = data[Object.keys(data)[0]]
+    const m = Array.isArray(v) ? v[0] : v
+    if (m) return m
+  }
+  if (data?.detail) return data.detail
+  return ERROS[status] || 'Ocorreu um erro inesperado.'
+}
 
-    if (error.response?.status === 401) {
-      localStorage.removeItem("access");
-      localStorage.removeItem("refresh");
-      window.location.href = "/login";
-    }
+api.interceptors.response.use(r => r, error => {
+  error.userMessage = mensagem(error)
+  // Sessão expirada em rota protegida: limpa as chaves e volta ao login (a rota usa hash).
+  if (error.response?.status === 401 && localStorage.getItem(KEYS.token) && !PUBLICAS.includes(limpa(error.config?.url))) {
+    Object.values(KEYS).forEach(k => localStorage.removeItem(k))
+    window.dispatchEvent(new Event('gestoria:sessao-expirada')) // avisa o AuthContext
+    window.location.hash = '#/login'
+  }
+  return Promise.reject(error)
+})
 
-    return Promise.reject(error);
-  },
-);
-
-export default api;
+export default api
