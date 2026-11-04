@@ -1,19 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
 import PageHead from '../components/PageHead.jsx'
 import { useApp } from '../store/AppContext.jsx'
-import notaTesteXml from '../data/nota-teste.xml?raw'
-import { UNIDADES, editarItem, errosItem, fmtNum, parseNfceXml, toNum, totais, validarNota } from '../lib/nfce.js'
+import api from '../services/api.js'
+import { UNIDADES, editarItem, errosItem, fmtNum, fmtPreco, toNum, totais, validarNota } from '../lib/nfce.js'
 import { brl, dmy } from '../lib/utils.js'
 
 // Fluxo do Cadastro (draft.stage): sem rascunho = leitura · 'editar' = pop-up de confirmação sobre a tela · 'classificar' = alimentar ou não.
 export default function Cadastro() {
   const { draft, setDraft, toast } = useApp()
 
-  // Leitura de demonstração: carrega a nota fictícia "crua" (src/data/nota-teste.xml).
-  // No produto real, é aqui que entra a consulta da NFC-e a partir do QR Code lido.
-  const lerNota = () => {
-    try { setDraft({ stage: 'editar', nota: parseNfceXml(notaTesteXml) }) } // o pop-up de confirmação abre em seguida
-    catch (e) { toast(e.message) }
+  const [lendo, setLendo] = useState(false)
+  const ocupado = useRef(false) // evita chamadas duplicadas (botão + leitura da câmera)
+
+  // Consulta a NFC-e na API e converte a resposta para o mesmo formato de nota usado pelo pop-up de confirmação.
+  const lerNota = async () => {
+    if (ocupado.current) return
+    ocupado.current = true; setLendo(true)
+    try {
+      const { data } = await api.get('/leitura-qrcode/nfce')
+      const nota = nfceParaNota(data?.nfce)
+      if (!nota) return toast('Nenhuma nota encontrada na leitura.')
+      setDraft({ stage: 'editar', nota }) // o pop-up de confirmação abre em seguida
+    } catch (e) { toast(e.userMessage || e.message || 'Não foi possível ler a nota.') }
+    finally { ocupado.current = false; setLendo(false) }
   }
 
   return (
@@ -22,7 +31,7 @@ export default function Cadastro() {
       <div className="row mt">
         <div style={{ width: 425, flex: 'none' }}>
           <Camera ativa={!draft} onLeitura={lerNota} />
-          <button className="btn dk" style={{ marginTop: 14, width: '100%', justifyContent: 'center' }} onClick={lerNota} disabled={!!draft}>Simular leitura da nota</button>
+          <button className="btn dk" style={{ marginTop: 14, width: '100%', justifyContent: 'center' }} onClick={lerNota} disabled={!!draft || lendo}>{lendo ? 'Lendo nota…' : 'Simular leitura da nota'}</button>
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           {draft?.stage === 'classificar' ? <Classificacao /> : (
@@ -33,6 +42,31 @@ export default function Cadastro() {
       {draft?.stage === 'editar' && <Confirmacao />}
     </>
   )
+}
+
+// Resposta da API ({ nfce: {...} }) -> nota no formato da tela de confirmação (números como texto editável).
+// Campos que a API não envia (número, endereço, protocolo etc.) ficam vazios e podem ser preenchidos no pop-up.
+// Em itens, "un" é a quantidade (valor_unitario x un = valor_total); a unidade de medida assume UN.
+function nfceParaNota(n) {
+  const itens = Array.isArray(n?.itens) ? n.itens : []
+  if (!n || typeof n !== 'object' || !itens.length) return null
+  const txt = v => String(v ?? '').trim()
+  return {
+    emitente: { razaoSocial: txt(n.nome_estabelecimento), cnpj: txt(n.cnpj), endereco: '' },
+    itens: itens.map((i, k) => ({
+      key: 'x' + k, codigo: '', descricao: txt(i.descricao),
+      quantidade: fmtNum(toNum(i.un), 3), unidade: 'UN',
+      valorUnitario: fmtPreco(toNum(i.valor_unitario)), valorTotal: fmtNum(toNum(i.valor_total)),
+      alimenticio: true,
+    })),
+    descontos: '0,00',
+    pagamento: { forma: txt(n.metodo_pag), valorPago: fmtNum(toNum(n.valor_total)) },
+    tributos: '',
+    info: { tipoEmissao: '', numero: '', serie: '', dataEmissao: txt(n.data_compra), horaEmissao: '', via: '', protocolo: '', dataAutorizacao: '', horaAutorizacao: '', ambiente: '', versaoXml: '' },
+    chave: txt(n.chave_acesso), urlConsulta: '',
+    consumidor: { cpf: '', nome: '' },
+    infoContribuinte: '',
+  }
 }
 
 // Webcam: abre ao entrar e fecha ao sair; detecta QR Code quando o navegador suporta.
