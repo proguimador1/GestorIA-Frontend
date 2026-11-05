@@ -99,6 +99,11 @@ const REGRAS = [
   ['Bebidas', /\b(refri|refrigerante|suco|agua|cerveja)/],
 ]
 const sem = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
+// Sugestão inicial da etiqueta ALIMENTAR / NÃO ALIMENTAR para notas lidas pela API (que não informam o tipo do item).
+// Só marca como não alimentar o que tem palavra típica de limpeza, higiene ou utilidade doméstica; o usuário pode alterar.
+const NAO_ALIMENTO = /\b(lampada|pilha|protetor|shampoo|xampu|condicionador|creme (para pentear|para as maos|de barbear|dental)|mascara capilar|hidratante|locao|barbear|sabonete|sabao|detergente|desinfetante|desengordurante|limpa|limpador|lava-louca|tira-mancha|alvejante|sanitari|amaciante|agua de passar|aromatizador|esponja|pano|luva|rodo|vassoura|balde|bacia|prendedor|corda|papel (higienico|toalha|aluminio)|filtro de papel|guardanapo|descartavel|canudo|palito|escova|pasta de dente|fio dental|enxaguante|desodorante|absorvente|fralda|algodao|haste|cotonete|(saco|pa) (de|para) lixo|filme (de )?pvc|vela|fosforo|isqueiro|racao|inseticida|repelente|lustra|cera)/
+export const pareceAlimento = nome => !NAO_ALIMENTO.test(sem(nome))
 export const categorizar = nome => (REGRAS.find(([, re]) => re.test(sem(nome)))?.[0] || 'Mercearia').replace('Laticinios', 'Laticínios')
 
 // Converte a nota confirmada para o formato usado em Finanças, Notas fiscais e Chatbot.

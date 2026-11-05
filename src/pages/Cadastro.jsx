@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import PageHead from '../components/PageHead.jsx'
 import { useApp } from '../store/AppContext.jsx'
 import api from '../services/api.js'
-import { UNIDADES, editarItem, errosItem, fmtNum, fmtPreco, toNum, totais, validarNota } from '../lib/nfce.js'
+import { UNIDADES, editarItem, errosItem, fmtNum, fmtPreco, pareceAlimento, toNum, totais, validarNota } from '../lib/nfce.js'
 import { brl, dmy } from '../lib/utils.js'
 
 // Fluxo do Cadastro (draft.stage): sem rascunho = leitura · 'editar' = pop-up de confirmação sobre a tela · 'classificar' = alimentar ou não.
@@ -47,8 +47,9 @@ export default function Cadastro() {
 // Resposta da API ({ nfce: {...} }) -> nota no formato da tela de confirmação (números como texto editável).
 // Campos que a API não envia (número, endereço, protocolo etc.) ficam vazios e podem ser preenchidos no pop-up.
 // Em itens, "un" é a quantidade (valor_unitario x un = valor_total); a unidade de medida assume UN.
+// A conversão XML -> JSON do backend devolve "itens" como objeto quando a nota tem um único item: vira lista aqui.
 function nfceParaNota(n) {
-  const itens = Array.isArray(n?.itens) ? n.itens : []
+  const itens = Array.isArray(n?.itens) ? n.itens : n?.itens && typeof n.itens === 'object' ? [n.itens] : []
   if (!n || typeof n !== 'object' || !itens.length) return null
   const txt = v => String(v ?? '').trim()
   return {
@@ -57,7 +58,7 @@ function nfceParaNota(n) {
       key: 'x' + k, codigo: '', descricao: txt(i.descricao),
       quantidade: fmtNum(toNum(i.un), 3), unidade: 'UN',
       valorUnitario: fmtPreco(toNum(i.valor_unitario)), valorTotal: fmtNum(toNum(i.valor_total)),
-      alimenticio: true,
+      alimenticio: pareceAlimento(txt(i.descricao)), // sugestão inicial; o usuário confirma na classificação
     })),
     descontos: '0,00',
     pagamento: { forma: txt(n.metodo_pag), valorPago: fmtNum(toNum(n.valor_total)) },

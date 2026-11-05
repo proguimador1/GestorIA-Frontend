@@ -8,7 +8,7 @@ import { brl, dm, estName, pct, sum } from '../lib/utils.js'
 export const Delta = ({ a, b }) => b ? <span className={a >= b ? 'up' : 'dn'}>{a >= b ? '▲' : '▼'} {pct(Math.abs(a / b - 1) * 100)}</span> : '—'
 // Preposição "a" com a contração correta: ao período anterior, à semana anterior, a julho
 const aoA = pl => pl.startsWith('o ') ? 'ao ' + pl.slice(2) : pl.startsWith('a ') ? 'à ' + pl.slice(2) : 'a ' + pl
-const Kpi = ({ label, value, sub, hl }) => <div className={'card kpi' + (hl ? ' hl' : '')}><div className="kt">{label}</div><div className="v">{value}</div><div className="s">{sub}</div></div>
+const Kpi = ({ label, value, sub, hl }) => <div className={'card kpi' + (hl ? ' hl' : '')}><div className="kt">{label}</div><div className="v">{value}</div>{sub && <div className="s">{sub}</div>}</div>
 const Tog = ({ opts, val, onSel }) => <div className="tog">{opts.map(([k, t]) => <span key={k} className={val === k ? 'on' : ''} onClick={() => onSel(k)}>{t}</span>)}</div>
 const Head = ({ title, sub, children }) => (<><div className="ct">{title}</div><div className="cs">{sub}</div>{children && <div style={{ marginTop: 16 }}>{children}</div>}</>)
 
@@ -20,9 +20,15 @@ export default function Visao() {
   const it = fin.items(r), tot = sum(it.map(i => i.total)), nn = new Set(it.map(i => i.n.id)).size
   const pit = fin.items(pr), pt = sum(pit.map(i => i.total)), pn = new Set(pit.map(i => i.n.id)).size
   const avg = nn ? tot / nn : 0, pavg = pn ? pt / pn : 0
+  // Gasto alimentar: itens alimentares do período, com os filtros de categoria e estabelecimento ativos.
+  const itAlim = it.filter(i => i.cat !== NAO_ALIM), totAlim = sum(itAlim.map(i => i.total))
+  // Gasto não alimentar e total pago: todos os itens lidos no período (o filtro de categoria não se aplica; o de estabelecimento, sim).
+  const todos = fin.items(r, { cat: '' })
+  const totNaoAlim = sum(todos.filter(i => i.cat === NAO_ALIM).map(i => i.total))
+  const totPago = sum(todos.map(i => i.total))
 
   const catMap = {}; fin.items(r, { cat: '' }).filter(i => !F.est || i.n.est === F.est).forEach(i => { if (i.cat !== NAO_ALIM) catMap[i.cat] = (catMap[i.cat] || 0) + i.total })
-  const naoAlim = sum(fin.items(r, { cat: '' }).filter(i => i.cat === NAO_ALIM && (!F.est || i.n.est === F.est)).map(i => i.total))
+  const naoAlim = totNaoAlim
   const catD = Object.entries(catMap).sort((a, b) => b[1] - a[1]), cTot = sum(catD.map(c => c[1]))
 
   const key = F.bar === 'total' ? 't' : 'm'
@@ -44,8 +50,10 @@ export default function Visao() {
 
   return (
     <>
-      <div className="row mt">
-        <Kpi hl label="Total gasto no período" value={brl(tot)} sub={`${new Set(it.map(i => i.n.est)).size} estabelecimentos · ${fin.lab()}`} />
+      <div className="kpis mt">
+        <Kpi hl label="Gasto alimentar no período" value={brl(totAlim)} sub={`${new Set(itAlim.map(i => i.n.est)).size} estabelecimentos · ${fin.lab()}`} />
+        <Kpi label="Gasto não alimentar" value={brl(totNaoAlim)} />
+        <Kpi label="Total pago no período" value={brl(totPago)} sub="alimentar + não alimentar" />
         <Kpi label="Variação do gasto" value={<Delta a={tot} b={pt} />} sub={pt ? `contra ${pl} (${cmp}): ${brl(pt)}` : `sem dados em ${cmp}`} />
         <Kpi label="Compras registradas" value={nn} sub={pn ? `${nn === pn ? 'igual ' + aoA(pl) : (nn > pn ? '▲ ' + (nn - pn) + ' a mais que ' : '▼ ' + (pn - nn) + ' a menos que ') + pl} (${pn})` : `sem dados em ${cmp}`} />
         <Kpi label="Valor médio por compra" value={brl(avg)} sub={pavg ? <><Delta a={avg} b={pavg} /> contra {pl} ({brl(pavg)})</> : `sem dados em ${cmp}`} />

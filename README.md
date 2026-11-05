@@ -84,6 +84,7 @@ gestoria/
     │   ├── Sidebar.jsx
     │   ├── Topbar.jsx
     │   ├── Overlays.jsx
+    │   ├── ConfirmDialog.jsx
     │   ├── PageHead.jsx
     │   ├── FilterBar.jsx
     │   ├── TabRow.jsx
@@ -134,7 +135,7 @@ gestoria/
 - **`finance.js`**: `createFinance(S, F)` devolve as funções de consulta ligadas aos dados e filtros atuais: `range`, `prevRange`, `lab`, `prevLab`, `phrase`, `notesIn`, `items`, `nTot`, `byDay`, `allCats`, `sheetRows` (aba Detalhada) e `sheetSimple` (aba Simples). Também exporta `shiftAnchor` (setas do período).
 - **`chat.js`**: `chatAnswer` responde às perguntas do chatbot por consultas aos dados. `SUG` guarda as sugestões. Trechos entre `**` viram negrito na tela.
 - **`export.js`**: `exportSheet` gera `GestorIA_AAAA-MM.xlsx` (ou com intervalo de datas para semana e período personalizado) com as abas "Detalhada" e "Simples", total por fórmula, formato de moeda e largura de colunas ajustada ao texto. Se a biblioteca falhar, baixa dois `.csv`.
-- **`nfce.js`**: nota do Cadastro: `parseNfceXml` (lê o XML), `toNum`/`fmtNum`/`fmtPreco` (números com vírgula), `totais`, `editarItem` (recalcula valores), `errosItem`, `validarNota`, `categorizar` (ponto de entrada da LLM de categorização) e `paraNotaDoApp`.
+- **`nfce.js`**: nota do Cadastro: `parseNfceXml` (lê o XML), `toNum`/`fmtNum`/`fmtPreco` (números com vírgula), `totais`, `editarItem` (recalcula valores), `errosItem`, `validarNota`, `pareceAlimento` (sugestão inicial alimentar ou não alimentar para notas lidas pela API), `categorizar` (ponto de entrada da LLM de categorização) e `paraNotaDoApp`.
 
 ### `src/store/`
 
@@ -150,6 +151,7 @@ gestoria/
 - **`Sidebar.jsx`**: menu lateral com seis entradas.
 - **`Topbar.jsx`**: logotipo, status de sincronização, contador de itens catalogados (produtos diferentes, pelo nome, em todas as notas) e menu do perfil (nome, e-mail, números, editar perfil, falar com o chatbot, exportar dados em JSON e restaurar demonstração).
 - **`Overlays.jsx`**: `Modal` e `Toast`.
+- **`ConfirmDialog.jsx`**: pop-up de confirmação verde com letras brancas, fundo da aplicação translúcido e botões Cancelar e Confirmar (Esc ou clique fora cancelam). Usado para apagar nota fiscal.
 - **`PageHead.jsx`**: linha de destaque e título.
 - **`FilterBar.jsx`**: período (Semana, Mês e Personalizado com data inicial e final), setas, atalho "Últimos 30 dias" e filtros de categoria e estabelecimento.
 - **`TabRow.jsx`**: abas, legenda e botão "Gerar planilha" (abre a prévia em modal; em Notas fiscais rola até a prévia da página).
@@ -163,9 +165,9 @@ gestoria/
 - **`Inicio.jsx`**: saudação e três atalhos.
 - **`Cadastro.jsx`**: leitura da nota (webcam ou simulação), tela de confirmação com todos os campos editáveis e classificação alimentar ou não alimentar antes de gravar (seção 14).
 - **`Financas.jsx`**: cabeçalho, abas, filtros e escolha entre Visão geral e Detalhamento.
-- **`FinVisao.jsx`**: indicadores, gráfico de linha, total por estabelecimento, rosca por categoria e destaques em frase.
+- **`FinVisao.jsx`**: seis indicadores em duas linhas de três (Gasto alimentar no período, Gasto não alimentar, Total pago no período, Variação do gasto, Compras registradas e Valor médio por compra), gráfico de linha, total por estabelecimento, rosca por categoria e destaques em frase.
 - **`FinDetalhamento.jsx`**: "Tabela comparativa de menor preço" (com rolagem vertical e horizontal), frase de análise e atalho para as notas.
-- **`Notas.jsx`**: histórico de notas (sem coluna de categoria), busca, exclusão e prévia da planilha.
+- **`Notas.jsx`**: histórico de notas (sem coluna de categoria) com apenas os itens alimentares, busca, exclusão com pop-up de confirmação e prévia da planilha.
 - **`Chatbot.jsx`**: conversa com sugestões e campo de texto.
 - **`Configuracoes.jsx`**: edição de nome e e-mail e restauração dos dados.
 
@@ -211,6 +213,18 @@ Categorias: Mercearia, Laticínios, Carnes, Bebidas, Padaria e Não alimentício
 ---
 
 ## 7. Regras de negócio
+
+### Indicadores da Visão geral
+- **Gasto alimentar no período** (célula verde): soma dos itens alimentares, com os filtros de categoria e estabelecimento; mostra quantos estabelecimentos tiveram compra de alimentos.
+- **Gasto não alimentar**: soma dos itens marcados como não alimentares no período.
+- **Total pago no período**: soma de todos os itens lidos no período (alimentares + não alimentares).
+- Nessas duas células o filtro de estabelecimento se aplica; o de categoria, não.
+- **Variação do gasto**, **Compras registradas** e **Valor médio por compra**: sem mudança, calculados sobre todos os itens do período.
+
+### Notas fiscais
+- A aba lista só os itens alimentares de cada nota; "Itens alimentares" e "Total alimentar" somam apenas esses itens. Nota sem nenhum item alimentar não aparece.
+- Os itens não alimentares continuam gravados na nota e entram no "Gasto não alimentar" de Finanças.
+- "Excluir nota" abre um pop-up de confirmação. Ao confirmar, a nota sai de Notas fiscais, Finanças, Chatbot e planilha, e a exclusão fica gravada no navegador.
 
 ### Período
 - **Semana:** segunda a domingo. **Mês:** primeiro ao último dia. **Personalizado:** data inicial e data final escolhidas pelo usuário (tamanho variável).
