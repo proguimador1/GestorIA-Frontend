@@ -1,75 +1,126 @@
-// Estado global: dados persistentes (S), filtros da interface (F), rascunho da nota, chat, aviso e modal.
+// Estado global: notas e dashboards vindos da API, filtros da interface (F), rascunho da nota, chat, aviso e modal.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { BASE_NOTES, colorOf, ensureEst } from '../data/seed.js'
-import { paraNotaDoApp } from '../lib/nfce.js'
+import { colorOf } from '../data/seed.js'
 import { useAuth } from './AuthContext.jsx'
 import { createFinance } from '../lib/finance.js'
-import { add, brl, today } from '../lib/utils.js'
+import { add, today } from '../lib/utils.js'
+import { dashboard, detalharNota, emParalelo, listarCategorias, listarNotas, notaDaApi } from '../services/gestoria.js'
 
-// Só o que o usuário altera é salvo no navegador: notas cadastradas (added), notas da base excluídas (removed),
-// estabelecimentos novos (estNovos) e perfil. A base (src/data/notas.json) não é copiada para o localStorage.
-const KEY = 'gestoria.v3'
-const fresh = () => ({ added: [], removed: [], estNovos: [], user: { name: 'Marina Duarte', email: 'marina@exemplo.com' } })
-const load = () => {
-  let p
-  try { p = { ...fresh(), ...JSON.parse(localStorage.getItem(KEY)) } } catch { p = fresh() }
-  p.estNovos.forEach(e => ensureEst(e.name, e.cnpj)) // recoloca na lista os mercados de notas cadastradas
-  return p
-}
 const WELCOME = [{ from: 'bot', t: 'Oi! Eu consulto as suas notas cadastradas e respondo com números. Escolha uma sugestão ou escreva sua pergunta.' }]
+const SEM_DADOS = { notes: [], carregando: false, erro: null }
 
 const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
 
 export function AppProvider({ children }) {
-  const { user } = useAuth()
-  const [P, setP] = useState(load)
-  // S é a visão completa dos dados: notas da base (menos as excluídas) + notas cadastradas.
-  const notes = useMemo(() => { const rm = new Set(P.removed); return [...BASE_NOTES.filter(n => !rm.has(n.id)), ...P.added] }, [P.added, P.removed])
-  // Itens catalogados: quantidade de produtos diferentes (pelo nome) em todas as notas. Repetir a compra de um produto não aumenta o número.
-  const catalog = useMemo(() => new Set(notes.flatMap(n => n.items.map(i => i.name.trim().toLowerCase()))).size, [notes])
-  const S = useMemo(() => ({ notes, catalog, user: P.user }), [notes, catalog, P.user])
+  const { user, signed, mock } = useAuth()
+  // Sem backend (modo de demonstração do login), nenhuma chamada de dados é feita.
+  const ativo = signed && !mock
+
   const [F, setFState] = useState({ mode: 'month', anchor: today(), from: add(today(), -29), to: today(), cat: '', est: '', tab: 'visao', line: 'dia', bar: 'total', q: '', all: false, open: null })
   const [draft, setDraft] = useState(null)
   const [chat, setChat] = useState(WELCOME)
   const [toastMsg, setToastMsg] = useState(null)
   const [modal, setModal] = useState(null)
-  const [syncing, setSyncing] = useState(false)
   const timer = useRef()
 
-  useEffect(() => { localStorage.setItem(KEY, JSON.stringify(P)) }, [P])
-  // Nome e e-mail da conta autenticada passam a ser os dados do perfil.
-  useEffect(() => {
-    if (user?.email) setP(p => ({ ...p, user: { name: user.nome || p.user.name, email: user.email } }))
-  }, [user?.email, user?.nome])
-  const setF = useCallback(p => setFState(f => ({ ...f, ...p })), [])
-  const fin = useMemo(() => createFinance(S, F), [S, F])
-  const catColor = useCallback(c => colorOf(c, fin.allCats()), [fin])
+  const [dados, setDados] = useState(SEM_DADOS)
+  const [dash, setDash] = useState({ chave: '', atual: null, anterior: null, geral: null, erro: null })
+  const [categorias, setCategorias] = useState([])
+  // Incrementado depois de salvar uma nota (ou em "Tentar novamente") para buscar tudo de novo.
+  const [versao, setVersao] = useState(0)
+  // Detalhe de cada nota (com produtos) por chave de acesso. As notas não mudam depois de salvas.
+  const detalhes = useRef(new Map())
 
-  const toast = useCallback(m => { setToastMsg(m); clearTimeout(timer.current); timer.current = setTimeout(() => setToastMsg(null), 2600) }, [])
+  const setF = useCallback(p => setFState(f => ({ ...f, ...p })), [])
+  const recarregar = useCallback(() => setVersao(v => v + 1), [])
+
+  // Períodos do filtro (dependem só de F). A janela de notas cobre o período anterior e o atual,
+  // para as comparações "contra o período anterior".
+  const periodos = useMemo(() => { const p = createFinance({ notes: [] }, F); return { r: p.range(), pr: p.prevRange() } }, [F])
+  const { r, pr } = periodos
+  const janela = F.all ? null : { inicio: pr[0], fim: r[1] }
+  const chaveJanela = janela ? `${janela.inicio}|${janela.fim}` : 'tudo'
+  const chaveDash = `${r.join('|')}|${pr.join('|')}`
+
+  // Troca de usuário (login/logout): limpa tudo o que veio da API.
+  useEffect(() => {
+    detalhes.current = new Map()
+    setDados(SEM_DADOS)
+    setDash({ chave: '', atual: null, anterior: null, geral: null, erro: null })
+    setCategorias([])
+    setDraft(null)
+    setChat(WELCOME)
+  }, [user?.email])
+
+  // Notas da janela: GET /api/notas/ e, para as que ainda não estão no cache, GET /api/notas/<chave>/.
+  useEffect(() => {
+    if (!ativo) return
+    let vivo = true
+    setDados(d => ({ ...d, carregando: true, erro: null }))
+    ;(async () => {
+      try {
+        const lista = await listarNotas(janela || {})
+        const faltam = lista.filter(n => !detalhes.current.has(n.chave_acesso))
+        await emParalelo(faltam, async n => { detalhes.current.set(n.chave_acesso, await detalharNota(n.chave_acesso)) })
+        if (vivo) setDados({ notes: lista.map(n => notaDaApi(n, detalhes.current.get(n.chave_acesso))), carregando: false, erro: null })
+      } catch (e) {
+        if (vivo) setDados(d => ({ ...d, carregando: false, erro: e.userMessage || 'Não foi possível carregar as notas.' }))
+      }
+    })()
+    return () => { vivo = false }
+  }, [ativo, chaveJanela, versao])
+
+  // Dashboard do período atual e do anterior: GET /api/dashboard/?inicio=&fim=
+  useEffect(() => {
+    if (!ativo) return
+    let vivo = true
+    Promise.all([dashboard({ inicio: r[0], fim: r[1] }), dashboard({ inicio: pr[0], fim: pr[1] })])
+      .then(([atual, anterior]) => vivo && setDash(d => ({ ...d, chave: chaveDash, atual, anterior, erro: null })))
+      .catch(e => vivo && setDash(d => ({ ...d, erro: e.userMessage || 'Não foi possível carregar o dashboard.' })))
+    return () => { vivo = false }
+  }, [ativo, chaveDash, versao])
+
+  // Totais de todo o histórico (cabeçalho): GET /api/dashboard/ sem datas.
+  useEffect(() => {
+    if (!ativo) return
+    let vivo = true
+    dashboard().then(geral => vivo && setDash(d => ({ ...d, geral }))).catch(() => {})
+    return () => { vivo = false }
+  }, [ativo, versao])
+
+  // Categorias cadastradas (seletor do Cadastro, filtros e cores): GET /api/categorias/
+  const carregarCategorias = useCallback(async () => { const c = await listarCategorias(); setCategorias(c); return c }, [])
+  useEffect(() => { if (ativo) carregarCategorias().catch(() => {}) }, [ativo, carregarCategorias])
+
+  const notes = dados.notes
+  // Números do cabeçalho (notas e produtos de todo o histórico) vêm do dashboard sem datas.
+  const S = useMemo(() => ({
+    notes,
+    catalog: dash.geral?.qtd_produtos ?? 0,
+    qtdNotas: dash.geral?.qtd_notas ?? 0,
+    totalGeral: Number(dash.geral?.total_alimentos || 0),
+    user: { name: user?.nome || user?.email || 'Usuário', email: user?.email || '' },
+  }), [notes, dash.geral, user?.nome, user?.email])
+  const fin = useMemo(() => createFinance(S, F), [S, F])
+  // Estabelecimentos das notas carregadas (o "id" é o próprio nome).
+  const ests = useMemo(() => [...new Set(notes.map(n => n.est))].sort((a, b) => a.localeCompare(b)).map(name => ({ id: name, name })), [notes])
+  // Categorias para filtros e cores: as cadastradas no backend e as que aparecem nas notas.
+  const todasCats = useMemo(() => [...new Set([...categorias.map(c => c.categoria), ...fin.allCats()])].sort((a, b) => a.localeCompare(b)), [categorias, fin])
+  const catColor = useCallback(c => colorOf(c, todasCats), [todasCats])
+
+  // Dashboard só vale para o período que está na tela (evita mostrar números do período anterior durante a troca).
+  const dashAtual = dash.chave === chaveDash ? dash.atual : null
+  const dashAnterior = dash.chave === chaveDash ? dash.anterior : null
+
+  const toast = useCallback(m => { setToastMsg(m); clearTimeout(timer.current); timer.current = setTimeout(() => setToastMsg(null), 3200) }, [])
   const openModal = useCallback(node => setModal(node), [])
   const closeModal = useCallback(() => setModal(null), [])
 
-  // Grava a nota confirmada no Cadastro. Recusa nota já cadastrada (mesma chave de acesso).
-  const confirmNote = nota => {
-    const chave = nota.chave.replace(/\D/g, '')
-    if (notes.some(n => n.chave === chave)) { toast('Esta nota já foi cadastrada (mesma chave de acesso).'); return false }
-    const { razaoSocial, cnpj } = nota.emitente
-    const est = ensureEst(razaoSocial.trim(), cnpj)
-    const novo = paraNotaDoApp(nota, est)
-    setP(p => ({
-      ...p,
-      added: [...p.added, novo],
-      estNovos: est.startsWith('u') && !p.estNovos.some(e => e.cnpj === cnpj) ? [...p.estNovos, { name: razaoSocial.trim(), cnpj }] : p.estNovos,
-    }))
-    setDraft(null); setSyncing(true); setTimeout(() => setSyncing(false), 900)
-    toast(`Nota registrada: ${novo.items.length} itens · ${brl(novo.total)}`)
-    return true
+  const value = {
+    S, F, setF, fin, ests, todasCats, catColor, categorias, carregarCategorias,
+    dashAtual, dashAnterior, erroDash: dash.erro, carregando: dados.carregando, erroDados: dados.erro, recarregar, versao, mock,
+    draft, setDraft, chat, setChat, toast, toastMsg, modal, openModal, closeModal, syncing: dados.carregando,
   }
-  const removeNote = id => setP(p => p.added.some(n => n.id === id) ? { ...p, added: p.added.filter(n => n.id !== id) } : { ...p, removed: [...p.removed, id] })
-  const setUser = u => setP(p => ({ ...p, user: u }))
-  const resetAll = () => { if (window.confirm('Restaurar os dados de demonstração?')) { setP(fresh()); toast('Dados restaurados') } }
-
-  const value = { S, removeNote, setUser, F, setF, fin, draft, setDraft, catColor, chat, setChat, toast, toastMsg, modal, openModal, closeModal, syncing, confirmNote, resetAll }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

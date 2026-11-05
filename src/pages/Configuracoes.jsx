@@ -1,12 +1,22 @@
 import { useState } from 'react'
 import PageHead from '../components/PageHead.jsx'
 import { useApp } from '../store/AppContext.jsx'
+import { useAuth } from '../store/AuthContext.jsx'
 
+// Perfil da conta: o nome é salvo no backend (PATCH /auth/users/me/); o e-mail é o login e não muda aqui.
 export default function Configuracoes() {
-  const { S, setUser, toast, resetAll } = useApp()
+  const { S, toast } = useApp()
+  const { atualizarNome } = useAuth()
   const [name, setName] = useState(S.user.name)
-  const [email, setEmail] = useState(S.user.email)
-  const salvar = () => { setUser({ name: name || S.user.name, email }); toast('Alterações salvas') }
+  const [salvando, setSalvando] = useState(false)
+  const salvar = async () => {
+    const nome = name.trim()
+    if (!nome) return toast('Informe o nome.')
+    setSalvando(true)
+    try { await atualizarNome(nome); toast('Alterações salvas') }
+    catch (e) { toast(e.userMessage || 'Não foi possível salvar o nome.') }
+    finally { setSalvando(false) }
+  }
   return (
     <>
       <PageHead eyebrow={`Conta · ${S.user.name.split(' ')[0].toUpperCase()}`}>Configurações</PageHead>
@@ -14,13 +24,12 @@ export default function Configuracoes() {
         <div className="card mt">
           <div className="mono lab" style={{ marginBottom: 18 }}>Perfil</div>
           <div className="grid2">
-            <div className="fld"><label className="mono lab">Nome</label><input value={name} onChange={e => setName(e.target.value)} /></div>
-            <div className="fld"><label className="mono lab">E-mail</label><input value={email} onChange={e => setEmail(e.target.value)} /></div>
+            <div className="fld"><label className="mono lab">Nome completo</label><input value={name} maxLength={100} onChange={e => setName(e.target.value)} /></div>
+            <div className="fld"><label className="mono lab">E-mail (login)</label><input value={S.user.email} readOnly disabled /></div>
           </div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 22 }}>
-          <button className="btn" style={{ background: 'transparent', color: 'var(--mute)', border: '1px solid #bfc4ae' }} onClick={resetAll}>Restaurar dados de demonstração</button>
-          <button className="btn dk big" onClick={salvar}>Salvar alterações</button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 22 }}>
+          <button className="btn dk big" onClick={salvar} disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar alterações'}</button>
         </div>
       </div>
     </>

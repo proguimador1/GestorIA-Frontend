@@ -1,22 +1,22 @@
 import { useNavigate } from 'react-router-dom'
 import Icon from '../components/Icon.jsx'
 import { useApp } from '../store/AppContext.jsx'
-import { EST } from '../data/seed.js'
+import StatusDados from '../components/StatusDados.jsx'
 import { brl, estName, sum } from '../lib/utils.js'
 
 // Aba "Detalhamento": tabela comparativa de menor preço por item entre estabelecimentos.
 export default function Detalhamento() {
-  const { F, fin } = useApp()
+  const { F, fin, ests } = useApp()
   const nav = useNavigate()
   const r = fin.range()
 
   // Último preço unitário pago por item e estabelecimento no período (ignora o filtro de estabelecimento).
   const map = {}
   fin.items(r, { est: '' }).forEach(i => {
-    const k = `${i.name} (${i.unit})`, m = (map[k] = map[k] || {})
+    const k = i.name, m = (map[k] = map[k] || {})
     if (!m[i.n.est] || m[i.n.est].d <= i.n.date) m[i.n.est] = { p: i.unitPrice, d: i.n.date }
   })
-  const used = EST.filter(e => Object.values(map).some(m => m[e.id]))
+  const used = ests.filter(e => Object.values(map).some(m => m[e.id]))
   const rows = Object.entries(map).filter(([, m]) => Object.keys(m).length > 1).sort((a, b) => a[0].localeCompare(b[0]))
   const win = {}
   const lines = rows.map(([k, m]) => {
@@ -31,6 +31,7 @@ export default function Detalhamento() {
 
   return (
     <>
+      <StatusDados />
       <div className="card mt" style={{ minWidth: 0 }}>
         <div className="ct">Tabela comparativa de menor preço{F.cat ? ' · ' + F.cat : ''}</div>
         <div className="cs" style={{ marginBottom: 20 }}>A cor verde representa o menor preço entre todos os estabelecimentos</div>
@@ -57,7 +58,7 @@ export default function Detalhamento() {
 
       <div className="card mt" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '20px 30px' }}>
         <span style={{ color: 'var(--dg)' }}><Icon n="rcpt" s={24} /></span>
-        <div style={{ flex: 1, fontSize: 15 }}>{cn} notas fiscais deste período têm itens{F.cat ? ' de ' + F.cat.toLowerCase() : ''}. Veja cada nota e os itens comprados.</div>
+        <div style={{ flex: 1, fontSize: 15 }}>{cn} {cn === 1 ? 'nota fiscal deste período tem' : 'notas fiscais deste período têm'} itens{F.cat ? ' de ' + F.cat.toLowerCase() : ''}. Veja cada nota e os itens comprados.</div>
         <span className="sc" style={{ color: 'var(--dg)', fontWeight: 500 }} onClick={() => nav('/notas')}>Ver em Notas fiscais</span>
       </div>
     </>

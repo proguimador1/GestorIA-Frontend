@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api, { KEYS } from '../services/api.js'
 import { mockAuth } from '../services/mockAuth.js'
+import { atualizarPerfil } from '../services/gestoria.js'
 
 const MOCK = import.meta.env.VITE_MOCK_AUTH === 'true'
 const AuthContext = createContext(null)
@@ -78,5 +79,15 @@ export function AuthProvider({ children }) {
   }
   const redefinirSenha = (uid, token, new_password) => MOCK ? mockAuth.confirmReset({ new_password }) : api.post('/auth/users/reset_password_confirm/', { uid, token, new_password })
 
-  return <AuthContext.Provider value={{ signed: !!user, user, login, logout, cadastro, solicitarRecuperacao, redefinirSenha, mock: MOCK }}>{children}</AuthContext.Provider>
+  // Nome do perfil: PATCH /auth/users/me/ (djoser). O e-mail é o login e não é alterado aqui.
+  async function atualizarNome(nome_completo) {
+    const nome = MOCK ? nome_completo : (await atualizarPerfil({ nome_completo })).nome_completo
+    setUser(u => {
+      const novo = { ...u, nome }
+      localStorage.setItem(KEYS.user, JSON.stringify(novo))
+      return novo
+    })
+  }
+
+  return <AuthContext.Provider value={{ signed: !!user, user, login, logout, cadastro, solicitarRecuperacao, redefinirSenha, atualizarNome, mock: MOCK }}>{children}</AuthContext.Provider>
 }

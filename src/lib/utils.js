@@ -1,5 +1,4 @@
 // Formatação, datas e utilitários gerais.
-import { EST, APP_TODAY } from '../data/seed.js'
 
 export const brl = v => 'R$ ' + (+v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 export const pct = v => Math.round(v) + '%'
@@ -10,6 +9,8 @@ export const add = (s, n) => { const d = dt(s); d.setUTCDate(d.getUTCDate() + n)
 export const dm = s => s.slice(8) + '/' + s.slice(5, 7)
 export const dmy = s => dm(s) + '/' + s.slice(0, 4)
 export const MES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
-export const today = () => APP_TODAY || iso(new Date())
-export const estName = id => EST.find(e => e.id === id)?.name || id
+// Data local (YYYY-MM-DD). toISOString usaria UTC e, à noite no Brasil, já seria o dia seguinte.
+export const today = () => new Date().toLocaleDateString('sv-SE')
+// O estabelecimento de cada nota já é o nome vindo da API.
+export const estName = id => id || 'Estabelecimento não informado'
 export const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()

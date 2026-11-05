@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import PageHead from '../components/PageHead.jsx'
+import StatusDados from '../components/StatusDados.jsx'
 import { useApp } from '../store/AppContext.jsx'
 import { SUG, chatAnswer } from '../lib/chat.js'
 
@@ -23,7 +24,8 @@ export default function Chatbot() {
           <button className="btn dk" onClick={() => send(txt)}>Enviar</button>
         </div>
       </div>
-      <p className="lab" style={{ marginTop: 14, fontSize: 14 }}>As respostas vêm de consultas às notas cadastradas, não de um modelo de linguagem.</p>
+      <StatusDados />
+      <p className="lab" style={{ marginTop: 14, fontSize: 14 }}>As respostas vêm de consultas às notas salvas no período carregado (o período atual e o anterior do filtro de Finanças), não de um modelo de linguagem.</p>
     </>
   )
 }

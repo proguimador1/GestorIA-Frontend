@@ -2,11 +2,10 @@ import Icon from './Icon.jsx'
 import { useApp } from '../store/AppContext.jsx'
 import { shiftAnchor } from '../lib/finance.js'
 import { add, dm, today } from '../lib/utils.js'
-import { EST } from '../data/seed.js'
 
 // Barra de período (Semana, Mês, Personalizado com data inicial e final), atalho e filtros opcionais.
 export default function FilterBar({ chips }) {
-  const { F, setF, fin, catColor } = useApp()
+  const { F, setF, fin, catColor, todasCats, ests } = useApp()
   const [s, e] = fin.range()
   const mode = m => setF({ mode: m, anchor: m === 'custom' ? F.anchor : F.anchor })
   const last30 = () => setF({ mode: 'custom', from: add(today(), -29), to: today() })
@@ -35,9 +34,10 @@ export default function FilterBar({ chips }) {
         <div style={{ flexBasis: '100%' }} />
         {F.cat
           ? <span className="chip fil"><i className="dot" style={{ background: catColor(F.cat) }} />Categoria: {F.cat}<button onClick={() => setF({ cat: '' })}>×</button></span>
-          : <select className="chip" value="" onChange={ev => setF({ cat: ev.target.value })}><option value="">Categoria: todas</option>{fin.allCats().map(c => <option key={c}>{c}</option>)}</select>}
+          : <select className="chip" value="" onChange={ev => setF({ cat: ev.target.value })}><option value="">Categoria: todas</option>{todasCats.map(c => <option key={c}>{c}</option>)}</select>}
         <select className="chip" value={F.est} onChange={ev => setF({ est: ev.target.value })}>
-          <option value="">Estabelecimento: todos</option>{EST.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+          <option value="">Estabelecimento: todos</option>{ests.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+          {F.est && !ests.some(x => x.id === F.est) && <option value={F.est}>{F.est}</option>}
         </select>
       </>)}
     </div>
