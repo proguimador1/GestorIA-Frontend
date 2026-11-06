@@ -4,7 +4,7 @@ import { colorOf } from '../data/seed.js'
 import { useAuth } from './AuthContext.jsx'
 import { createFinance } from '../lib/finance.js'
 import { add, today } from '../lib/utils.js'
-import { dashboard, detalharNota, emParalelo, listarCategorias, listarNotas, notaDaApi } from '../services/gestoria.js'
+import { dashboard, detalharNota, emParalelo, excluirNota, listarCategorias, listarNotas, notaDaApi } from '../services/gestoria.js'
 
 const WELCOME = [{ from: 'bot', t: 'Oi! Eu consulto as suas notas cadastradas e respondo com números. Escolha uma sugestão ou escreva sua pergunta.' }]
 const SEM_DADOS = { notes: [], carregando: false, erro: null }
@@ -23,6 +23,20 @@ export function AppProvider({ children }) {
   const [toastMsg, setToastMsg] = useState(null)
   const [modal, setModal] = useState(null)
   const timer = useRef()
+  // Diálogo de confirmação (components/Overlays.jsx › Confirm): confirmar({ titulo, destaque, texto, confirmar, cancelar, perigo })
+  // devolve uma Promise que resolve true (confirmou) ou false (cancelou, Esc, clique fora ou troca de tela).
+  const [dialogo, setDialogo] = useState(null)
+  const dialogoRef = useRef(null)
+  const responderDialogo = useCallback(ok => {
+    const d = dialogoRef.current
+    if (!d) return
+    dialogoRef.current = null; setDialogo(null); d.resolver(ok)
+  }, [])
+  const confirmar = useCallback(opcoes => new Promise(resolver => {
+    dialogoRef.current?.resolver(false) // um diálogo novo cancela o anterior
+    dialogoRef.current = { ...opcoes, resolver }
+    setDialogo(dialogoRef.current)
+  }), [])
 
   const [dados, setDados] = useState(SEM_DADOS)
   const [dash, setDash] = useState({ chave: '', atual: null, anterior: null, geral: null, erro: null })
@@ -34,6 +48,13 @@ export function AppProvider({ children }) {
 
   const setF = useCallback(p => setFState(f => ({ ...f, ...p })), [])
   const recarregar = useCallback(() => setVersao(v => v + 1), [])
+  // Exclui a nota no backend, tira da tela na hora e busca de novo listas, dashboards e números do cabeçalho.
+  const removerNota = useCallback(async chave => {
+    await excluirNota(chave)
+    detalhes.current.delete(chave)
+    setDados(d => ({ ...d, notes: d.notes.filter(n => n.id !== chave) }))
+    recarregar()
+  }, [recarregar])
 
   // Períodos do filtro (dependem só de F). A janela de notas cobre o período anterior e o atual,
   // para as comparações "contra o período anterior".
@@ -119,8 +140,9 @@ export function AppProvider({ children }) {
 
   const value = {
     S, F, setF, fin, ests, todasCats, catColor, categorias, carregarCategorias,
-    dashAtual, dashAnterior, erroDash: dash.erro, carregando: dados.carregando, erroDados: dados.erro, recarregar, versao, mock,
+    dashAtual, dashAnterior, erroDash: dash.erro, carregando: dados.carregando, erroDados: dados.erro, recarregar, removerNota, versao, mock,
     draft, setDraft, chat, setChat, toast, toastMsg, modal, openModal, closeModal, syncing: dados.carregando,
+    dialogo, confirmar, responderDialogo,
   }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

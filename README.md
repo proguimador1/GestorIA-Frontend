@@ -148,7 +148,8 @@ frontend_auth_nfce/
 - **`Sidebar.jsx`**: menu lateral com seis entradas.
 - **`Topbar.jsx`**: logotipo, status de sincronização (aparece "Sincronizando…" enquanto as notas carregam), produtos registrados e menu do perfil (notas, produtos e gasto com alimentos de todo o histórico, editar perfil, chatbot, exportar as notas carregadas em JSON e sair).
 - **`StatusDados.jsx`**: aviso de carregamento, de erro (com "Tentar novamente") e do modo de demonstração.
-- **`Overlays.jsx`**, **`PageHead.jsx`**, **`FilterBar.jsx`** (período, categorias cadastradas e mercados das notas), **`TabRow.jsx`**, **`SheetPreview.jsx`**, **`LineChart.jsx`**, **`Donut.jsx`**, **`Icon.jsx`** e **`AuthLayout.jsx`**.
+- **`Overlays.jsx`**: `Modal`, `Toast` e `Confirm`, o diálogo de confirmação (fundo verde escuro, letras brancas e página ao fundo desfocada). Para usá-lo, chame `confirmar({ titulo, destaque, texto, confirmar, cancelar, perigo })` do `useApp()`, que devolve uma Promise com `true` ou `false`. Esc, clique fora e troca de tela cancelam.
+- **`PageHead.jsx`**, **`FilterBar.jsx`** (período, categorias cadastradas e mercados das notas), **`TabRow.jsx`**, **`SheetPreview.jsx`**, **`LineChart.jsx`**, **`Donut.jsx`**, **`Icon.jsx`** e **`AuthLayout.jsx`**.
 
 ### `src/pages/`
 
@@ -157,7 +158,7 @@ frontend_auth_nfce/
 - **`Financas.jsx`**: cabeçalho, abas, filtros e escolha entre Visão geral e Detalhamento.
 - **`FinVisao.jsx`**: indicadores, evolução (por dia, acumulada ou por mês), total por estabelecimento, rosca por categoria e destaques.
 - **`FinDetalhamento.jsx`**: tabela comparativa de menor preço por produto entre mercados.
-- **`Notas.jsx`**: histórico de notas do usuário, com produtos, marca e categoria, busca e prévia da planilha.
+- **`Notas.jsx`**: histórico de notas do usuário, com produtos, marca e categoria, busca, prévia da planilha e o botão **Excluir nota** no detalhe de cada nota (pede confirmação no diálogo do app e apaga a nota e os produtos dela).
 - **`Chatbot.jsx`**: conversa com sugestões e campo de texto.
 - **`Configuracoes.jsx`**: edição do nome (salvo no backend); o e-mail é o login e não muda.
 
@@ -217,6 +218,17 @@ Categorias: as 16 cadastradas no backend (`GET /api/categorias/`), com cores aut
 
 Clicar numa barra, numa fatia ou numa linha da legenda ativa o filtro. Clicar de novo remove.
 
+**Cards da Visão geral** (grade 3 × 2):
+
+| | Esquerda | Meio | Direita |
+|---|---|---|---|
+| Cima | Gasto com alimentos | Gasto com produtos não alimentícios | Total pago no período |
+| Baixo | Variação do gasto | Notas registradas | Valor médio por compra |
+
+- **Total pago** = soma do total dos cupons (`total_cupons`). **Não alimentícios** = total pago − gasto com alimentos (esses itens não são salvos um a um). Os dois ignoram o filtro de categoria (itens não alimentícios não têm categoria); o filtro de estabelecimento vale.
+- **Variação do gasto** compara o gasto com alimentos com o do período anterior, que tem o mesmo número de dias e termina na véspera do início do atual (junho, com 30 dias, é comparado com 02/05 a 31/05). Mostra ▲ ou ▼ e a porcentagem, ou "—" quando o período anterior não tem gasto.
+- **Valor médio por compra** = gasto com alimentos ÷ notas do período, com a mesma comparação.
+
 **Origem dos números:** sem filtro de categoria e de estabelecimento, os indicadores e a rosca usam o `GET /api/dashboard/` do período atual e do anterior. Com filtro, são calculados a partir das notas carregadas. A opção "Por mês" do gráfico de evolução usa o `por_mes` do dashboard dos últimos 6 meses.
 
 ### Detalhamento
@@ -265,6 +277,7 @@ O classificador de categorias é um container Ollama separado (`classificador-al
 | Cadastro, filtros | `GET /api/categorias/` | As 16 categorias |
 | Cadastro | `POST /api/notas/confirmar/` | Grava a nota e os produtos alimentícios do usuário |
 | Notas, Finanças, Chatbot | `GET /api/notas/?inicio=&fim=` e `GET /api/notas/<chave>/` | Notas e produtos do período |
+| Notas | `DELETE /api/notas/<chave>/` | Exclui a nota e os produtos dela |
 | Finanças, cabeçalho | `GET /api/dashboard/?inicio=&fim=` | Totais, por categoria e por mês |
 | Configurações | `PATCH /auth/users/me/` | Nome do perfil |
 
@@ -275,7 +288,7 @@ O classificador de categorias é um container Ollama separado (`classificador-al
 - A leitura real do QR Code não está implementada: a webcam só percebe que há um QR Code e chama o gerador fictício.
 - **O gerador fictício devolve sempre a chave de acesso `1`.** Como a chave é única no banco, a partir da segunda nota a API responde "Esta nota fiscal já foi cadastrada"; troque a chave no pop-up para cadastrar.
 - A rota de leitura do backend dá erro 500 depois de cerca de 20 leituras (contador interno); reinicie o `runserver`.
-- Não há rota para excluir ou editar uma nota salva.
+- Não há rota para editar uma nota salva; só dá para excluí-la e cadastrar de novo.
 - O dashboard do backend só filtra por data; com filtro de categoria ou estabelecimento, os números são calculados no front.
 - Notas e Finanças buscam o detalhe de cada nota do período (uma chamada por nota, com cache).
 - O Chatbot responde sobre as notas carregadas (período atual e anterior do filtro).

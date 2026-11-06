@@ -14,6 +14,7 @@ const Kpi = ({ label, value, sub, hl }) => <div className={'card kpi' + (hl ? ' 
 const Tog = ({ opts, val, onSel }) => <div className="tog">{opts.map(([k, t]) => <span key={k} className={val === k ? 'on' : ''} onClick={() => onSel(k)}>{t}</span>)}</div>
 const Head = ({ title, sub, children }) => (<><div className="ct">{title}</div><div className="cs">{sub}</div>{children && <div style={{ marginTop: 16 }}>{children}</div>}</>)
 const num = v => Number(v) || 0
+const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`
 
 // Os 6 meses que terminam no mês de "fim" (AAAA-MM).
 function ultimosMeses(fim, n = 6) {
@@ -67,8 +68,17 @@ export default function Visao() {
   const pn = usarDash ? dashAnterior.qtd_notas : new Set(pit.map(i => i.n.id)).size
   const avg = nn ? tot / nn : 0, pavg = pn ? pt / pn : 0
   const nEst = new Set(fin.notesIn(r).map(n => n.est)).size
-  // Itens não alimentícios não são salvos: só aparecem na diferença entre o total dos cupons e o gasto com alimentos.
-  const outrosCupom = usarDash ? Math.max(0, num(dashAtual.total_cupons) - num(dashAtual.total_alimentos)) : 0
+  // Total pago e itens não alimentícios (não são salvos um a um): vêm da diferença entre o total do cupom e o gasto com
+  // alimentos. Não têm categoria, então o filtro de categoria não vale para eles; o de estabelecimento vale.
+  const notasPeriodo = fin.notesIn(r)
+  const doDash = !F.est && !!dashAtual
+  const totalPago = doDash ? num(dashAtual.total_cupons) : sum(notasPeriodo.map(n => n.totalCupom))
+  const alimentosPeriodo = doDash ? num(dashAtual.total_alimentos) : sum(notasPeriodo.map(n => n.total))
+  const naoAlim = Math.max(0, totalPago - alimentosPeriodo)
+  const nNotasPeriodo = doDash ? dashAtual.qtd_notas : notasPeriodo.length
+  const fatia = v => totalPago > 0 ? pct(v / totalPago * 100) : '0%'
+  const avisoCat = F.cat ? ' · o filtro de categoria não se aplica' : ''
+  const outrosCupom = naoAlim
 
   const porCategoria = (lista, itens) => {
     if (!F.est && lista) return lista.map(c => [c.categoria, num(c.total)])
@@ -98,10 +108,13 @@ export default function Visao() {
   return (
     <>
       <StatusDados />
-      <div className="row mt">
-        <Kpi hl label="Gasto com alimentos" value={brl(tot)} sub={`${nEst} estabelecimento${nEst === 1 ? '' : 's'} · ${fin.lab()}${usarDash ? ` · cupons: ${brl(num(dashAtual.total_cupons))}` : ''}`} />
+      {/* Grade 3 x 2: alimentos · não alimentícios · total pago / variação · notas · valor médio */}
+      <div className="kpis mt">
+        <Kpi hl label="Gasto com alimentos" value={brl(tot)} sub={`${nEst} estabelecimento${nEst === 1 ? '' : 's'} · ${fin.lab()}${totalPago > 0 ? ` · ${fatia(tot)} do total pago` : ''}`} />
+        <Kpi label="Gasto com produtos não alimentícios" value={brl(naoAlim)} sub={`${fatia(naoAlim)} do total pago · itens que não são salvos${avisoCat}`} />
+        <Kpi label="Total pago no período" value={brl(totalPago)} sub={`alimentos + não alimentícios · ${plural(nNotasPeriodo, 'nota', 'notas')}${avisoCat}`} />
         <Kpi label="Variação do gasto" value={<Delta a={tot} b={pt} />} sub={pt ? `contra ${pl} (${cmp}): ${brl(pt)}` : `sem dados em ${cmp}`} />
-        <Kpi label="Compras registradas" value={nn} sub={pn ? `${nn === pn ? 'igual ' + aoA(pl) : (nn > pn ? '▲ ' + (nn - pn) + ' a mais que ' : '▼ ' + (pn - nn) + ' a menos que ') + pl} (${pn})` : `sem dados em ${cmp}`} />
+        <Kpi label="Notas registradas" value={nn} sub={pn ? `${nn === pn ? 'igual ' + aoA(pl) : (nn > pn ? '▲ ' + (nn - pn) + ' a mais que ' : '▼ ' + (pn - nn) + ' a menos que ') + pl} (${pn})` : `sem dados em ${cmp}`} />
         <Kpi label="Valor médio por compra" value={brl(avg)} sub={pavg ? <><Delta a={avg} b={pavg} /> contra {pl} ({brl(pavg)})</> : `sem dados em ${cmp}`} />
       </div>
 

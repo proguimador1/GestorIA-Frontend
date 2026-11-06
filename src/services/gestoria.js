@@ -38,6 +38,8 @@ export const confirmarNota = dados => api.post('/api/notas/confirmar/', dados).t
 
 export const listarNotas = p => api.get('/api/notas/', periodo(p)).then(r => lista(r.data))
 export const detalharNota = chave => api.get(`/api/notas/${encodeURIComponent(chave)}/`).then(r => r.data)
+// Exclui a nota do usuário logado (e os produtos dela). 204 sem corpo; 404 se a nota não é dele ou não existe.
+export const excluirNota = chave => api.delete(`/api/notas/${encodeURIComponent(chave)}/`)
 export const dashboard = p => api.get('/api/dashboard/', periodo(p)).then(r => r.data)
 
 // ---------- Perfil ----------

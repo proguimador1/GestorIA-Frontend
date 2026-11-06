@@ -1,7 +1,7 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import Sidebar from './components/Sidebar.jsx'
 import Topbar from './components/Topbar.jsx'
-import { Modal, Toast } from './components/Overlays.jsx'
+import { Confirm, Modal, Toast } from './components/Overlays.jsx'
 import PrivateRoute from './routes/PrivateRoute.jsx'
 import Login from './pages/auth/Login.jsx'
 import Register from './pages/auth/Register.jsx'
@@ -27,6 +27,7 @@ function Layout() {
       </div>
       <Modal />
       <Toast />
+      <Confirm />
     </>
   )
 }

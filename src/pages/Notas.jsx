@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import PageHead from '../components/PageHead.jsx'
 import TabRow from '../components/TabRow.jsx'
 import FilterBar from '../components/FilterBar.jsx'
@@ -12,13 +12,34 @@ const qtd = v => String(v).replace('.', ',')
 // Histórico de notas do usuário (GET /api/notas/ + GET /api/notas/<chave>/), busca, filtros e prévia da planilha.
 // "Alimentos" é a soma dos produtos salvos; "Total do cupom" inclui os itens não alimentícios da nota.
 export default function Notas() {
-  const { S, F, setF, fin } = useApp()
+  const { S, F, setF, fin, toast, removerNota, recarregar, confirmar } = useApp()
+  const [excluindo, setExcluindo] = useState(null) // chave da nota que está sendo excluída
   const r = fin.range(), q = F.q.toLowerCase()
   const base = S.notes
     .filter(n => (F.all || (n.date >= r[0] && n.date <= r[1])) && (!F.est || n.est === F.est) && (!F.cat || n.items.some(i => i.cat === F.cat)))
     .filter(n => !q || [estName(n.est), n.chave, n.pay, ...n.items.flatMap(i => [i.name, i.marca, i.cat])].join(' ').toLowerCase().includes(q))
     .sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0)
   const th = { background: 'none' }
+
+  // DELETE /api/notas/<chave>/: apaga a nota e os produtos dela. Pede confirmação antes.
+  const excluir = async n => {
+    const ok = await confirmar({
+      titulo: 'Excluir esta nota?',
+      destaque: `${dmy(n.date)} · ${estName(n.est)} · ${brl(n.totalCupom)}`,
+      texto: ['Os produtos dela também serão apagados.', 'Essa ação não pode ser desfeita.'],
+      confirmar: 'Excluir nota', cancelar: 'Cancelar', perigo: true,
+    })
+    if (!ok) return
+    setExcluindo(n.id)
+    try {
+      await removerNota(n.id)
+      setF({ open: null })
+      toast('Nota excluída')
+    } catch (e) {
+      if (e.response?.status === 404) { setF({ open: null }); recarregar(); toast('Esta nota já não existe.') }
+      else toast(e.userMessage || 'Não foi possível excluir a nota.')
+    } finally { setExcluindo(null) }
+  }
 
   return (
     <>
@@ -68,6 +89,9 @@ export default function Notas() {
                         <div className="lab" style={{ padding: '8px 10px', fontSize: 12 }}>
                           Chave de acesso {n.chave}{n.cnpj ? ' · CNPJ ' + n.cnpj : ''}
                           {n.totalCupom - n.total > 0.005 && <> · {brl(n.totalCupom - n.total)} em itens não alimentícios (não salvos)</>}
+                        </div>
+                        <div style={{ padding: '8px 10px 10px' }}>
+                          <button className="btn cancel" disabled={excluindo === n.id} onClick={e => { e.stopPropagation(); excluir(n) }}>{excluindo === n.id ? 'Excluindo…' : 'Excluir nota'}</button>
                         </div>
                       </div>
                     </td></tr>
