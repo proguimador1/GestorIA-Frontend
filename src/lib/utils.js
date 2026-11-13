@@ -10,6 +10,9 @@ export const add = (s, n) => { const d = dt(s); d.setUTCDate(d.getUTCDate() + n)
 export const dm = s => s.slice(8) + '/' + s.slice(5, 7)
 export const dmy = s => dm(s) + '/' + s.slice(0, 4)
 export const MES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
-export const today = () => APP_TODAY || iso(new Date())
+// Data local (AAAA-MM-DD), sem o desvio de fuso do toISOString (que usa UTC)
+export const isoLocal = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+export const today = () => APP_TODAY || isoLocal()
 export const estName = id => EST.find(e => e.id === id)?.name || id
 export const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()

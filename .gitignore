@@ -25,3 +25,7 @@ dist-ssr
 
 # Local environment
 .env
+
+# Chave do Gemini (chatbot) e outros segredos: nunca enviar ao GitHub
+.env.local
+.env.*.local

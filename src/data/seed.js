@@ -18,8 +18,11 @@ export const BASE_NOTES = base.notas.map(n => ({
   items: n.itens.map(i => ({ name: i.nome, cat: i.categoria, qty: i.quantidade, unit: i.unidade, unitPrice: i.valorUnitario, total: i.valorTotal, storage: i.armazenamento || STORAGE[i.categoria] || 'despensa' })),
 }))
 
-// Data tratada como "hoje": o último dia da base (troque por new Date().toISOString().slice(0, 10) para usar a data real).
-export const APP_TODAY = BASE_NOTES.reduce((m, n) => n.date > m ? n.date : m, '0000-00-00')
+// Data tratada como "hoje".
+// Padrão (ou VITE_DATA_REAL=true no .env): usa a data atual do computador (APP_TODAY = null).
+// VITE_DATA_REAL=false: usa o último dia da base, para a demonstração sempre ter dados no mês corrente.
+const ULTIMO_DIA_BASE = BASE_NOTES.reduce((m, n) => n.date > m ? n.date : m, '0000-00-00')
+export const APP_TODAY = import.meta.env.VITE_DATA_REAL === 'false' ? ULTIMO_DIA_BASE : null
 
 // Estabelecimento pelo CNPJ. Se o CNPJ não existir na base (nota cadastrada de um mercado novo), é incluído na lista.
 export function ensureEst(nome, cnpj) {

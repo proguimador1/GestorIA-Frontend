@@ -1,4 +1,5 @@
-// Estado global: dados persistentes (S), filtros da interface (F), rascunho da nota, chat, aviso e modal.
+// Estado global: dados persistentes (S), filtros da interface (F), rascunho da nota, aviso e modal.
+// O histórico do chatbot fica em store/useChats.js.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { BASE_NOTES, colorOf, ensureEst } from '../data/seed.js'
 import { paraNotaDoApp } from '../lib/nfce.js'
@@ -16,7 +17,6 @@ const load = () => {
   p.estNovos.forEach(e => ensureEst(e.name, e.cnpj)) // recoloca na lista os mercados de notas cadastradas
   return p
 }
-const WELCOME = [{ from: 'bot', t: 'Oi! Eu consulto as suas notas cadastradas e respondo com números. Escolha uma sugestão ou escreva sua pergunta.' }]
 
 const Ctx = createContext(null)
 export const useApp = () => useContext(Ctx)
@@ -31,7 +31,6 @@ export function AppProvider({ children }) {
   const S = useMemo(() => ({ notes, catalog, user: P.user }), [notes, catalog, P.user])
   const [F, setFState] = useState({ mode: 'month', anchor: today(), from: add(today(), -29), to: today(), cat: '', est: '', tab: 'visao', line: 'dia', bar: 'total', q: '', all: false, open: null })
   const [draft, setDraft] = useState(null)
-  const [chat, setChat] = useState(WELCOME)
   const [toastMsg, setToastMsg] = useState(null)
   const [modal, setModal] = useState(null)
   const [syncing, setSyncing] = useState(false)
@@ -70,6 +69,6 @@ export function AppProvider({ children }) {
   const setUser = u => setP(p => ({ ...p, user: u }))
   const resetAll = () => { if (window.confirm('Restaurar os dados de demonstração?')) { setP(fresh()); toast('Dados restaurados') } }
 
-  const value = { S, removeNote, setUser, F, setF, fin, draft, setDraft, catColor, chat, setChat, toast, toastMsg, modal, openModal, closeModal, syncing, confirmNote, resetAll }
+  const value = { S, removeNote, setUser, F, setF, fin, draft, setDraft, catColor, toast, toastMsg, modal, openModal, closeModal, syncing, confirmNote, resetAll }
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }

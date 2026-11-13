@@ -62,6 +62,8 @@ gestoria/
 │   ├── gerar-base.mjs
 │   ├── xml-para-json.mjs
 │   └── validar-notas.mjs
+├── server/
+│   └── gemini-proxy.js
 ├── .gitignore
 ├── README.md
 └── src/
@@ -77,9 +79,13 @@ gestoria/
     │   ├── utils.js
     │   ├── finance.js
     │   ├── chat.js
+    │   ├── llm.js
     │   └── export.js
+    ├── services/
+    │   └── llm.js
     ├── store/
-    │   └── AppContext.jsx
+    │   ├── AppContext.jsx
+    │   └── useChats.js
     ├── components/
     │   ├── Sidebar.jsx
     │   ├── Topbar.jsx
@@ -91,6 +97,7 @@ gestoria/
     │   ├── SheetPreview.jsx
     │   ├── LineChart.jsx
     │   ├── Donut.jsx
+    │   ├── Relogio.jsx
     │   └── Icon.jsx
     └── pages/
         ├── Inicio.jsx
@@ -111,7 +118,8 @@ gestoria/
 
 - **`index.html`**: documento base, com a `<div id="root">`, as fontes e o ponto de entrada `src/main.jsx`.
 - **`package.json`**: dependências e scripts (`dev`, `build`, `preview`, `dados`, `validar`, `gerar-base`).
-- **`vite.config.js`**: ativa o plugin do React e define `base: './'`.
+- **`vite.config.js`**: ativa o plugin do React, define `base: './'` e liga o proxy do chatbot (`server/gemini-proxy.js`), passando a ele a chave lida de `.env.local`.
+- **`server/gemini-proxy.js`**: rotas `/api/chat` e `/api/chat/status`, executadas no servidor do Vite (`npm run dev` e `npm run preview`). Guarda a chave do Gemini e repassa as perguntas ao modelo (seção 15).
 
 ### `src/`
 
@@ -125,17 +133,22 @@ gestoria/
 
 ### `src/data/`
 
-- **`seed.js`**: lê `notas.json` e monta `EST` (emitentes), `CATS` (cores), `BASE_NOTES`, `APP_TODAY` (último dia da base), `ensureEst` (inclui um mercado novo pelo CNPJ), `PALETTE` e `colorOf`.
+- **`seed.js`**: lê `notas.json` e monta `EST` (emitentes), `CATS` (cores), `BASE_NOTES`, `APP_TODAY` (`null` = data real; com `VITE_DATA_REAL=false`, último dia da base), `ensureEst` (inclui um mercado novo pelo CNPJ), `PALETTE` e `colorOf`.
 - **`notas.json`**: a base de notas fiscais fictícias (formato na seção 8), usada em Finanças, Notas fiscais e Chatbot. É o único arquivo a trocar para mudar a base.
 - **`nota-teste.xml`**: nota fiscal fictícia "crua" (15 itens, alimentares e não alimentares) que a leitura simulada do Cadastro carrega. Usada apenas no Cadastro (seção 14).
 
 ### `src/lib/` (lógica sem interface)
 
-- **`utils.js`**: formatação de moeda e porcentagem, datas (`add`, `dm`, `dmy`, `today`), nomes de meses, `estName` e `norm`.
+- **`utils.js`**: formatação de moeda e porcentagem, datas (`add`, `dm`, `dmy`, `isoLocal`, `today`), nomes de meses, `estName` e `norm`.
 - **`finance.js`**: `createFinance(S, F)` devolve as funções de consulta ligadas aos dados e filtros atuais: `range`, `prevRange`, `lab`, `prevLab`, `phrase`, `notesIn`, `items`, `nTot`, `byDay`, `allCats`, `sheetRows` (aba Detalhada) e `sheetSimple` (aba Simples). Também exporta `shiftAnchor` (setas do período).
-- **`chat.js`**: `chatAnswer` responde às perguntas do chatbot por consultas aos dados. `SUG` guarda as sugestões. Trechos entre `**` viram negrito na tela.
+- **`chat.js`**: motor do chatbot sobre as notas: `responder` (regras locais, usadas quando o Gemini não está disponível), `executarFerramenta` e `contextoLLM` (consultas pedidas pelo Gemini), `WELCOME`, `SUG` (sugestões) e `relatorioPadrao`. Texto com `###`, `- `, `1. `, `> ` e `**` é desenhado pela tela sem HTML.
+- **`llm.js`**: configuração do Gemini compartilhada entre navegador e servidor: modelo padrão, instrução de sistema (escopo e regras) e declaração das ferramentas. Não contém a chave.
 - **`export.js`**: `exportSheet` gera `GestorIA_AAAA-MM.xlsx` (ou com intervalo de datas para semana e período personalizado) com as abas "Detalhada" e "Simples", total por fórmula, formato de moeda e largura de colunas ajustada ao texto. Se a biblioteca falhar, baixa dois `.csv`.
 - **`nfce.js`**: nota do Cadastro: `parseNfceXml` (lê o XML), `toNum`/`fmtNum`/`fmtPreco` (números com vírgula), `totais`, `editarItem` (recalcula valores), `errosItem`, `validarNota`, `pareceAlimento` (sugestão inicial alimentar ou não alimentar para notas lidas pela API), `categorizar` (ponto de entrada da LLM de categorização) e `paraNotaDoApp`.
+
+### `src/services/`
+
+- **`llm.js`**: cliente do chatbot no navegador. Chama `/api/chat`, executa as ferramentas pedidas pelo Gemini e devolve a resposta; erros viram `ErroLLM` para o chat cair nas regras locais.
 
 ### `src/store/`
 
@@ -143,21 +156,23 @@ gestoria/
   - `S`: visão completa dos dados (notas da base, menos as excluídas, mais as cadastradas; `catalog`, a quantidade de produtos diferentes pelo nome; usuário). Só o que o usuário altera é gravado em `localStorage`, na chave `gestoria.v3`: notas cadastradas, notas da base excluídas, mercados novos e perfil.
   - `F`: filtros e estado da interface (período, categoria, estabelecimento, aba, alternadores, busca, nota aberta).
   - `fin`: funções de consulta recalculadas quando `S` ou `F` mudam.
-  - `draft`, `catColor` (cor de cada categoria), `chat`, `toast`, `modal` e `syncing`.
+  - `draft`, `catColor` (cor de cada categoria), `toast`, `modal` e `syncing`.
   - Ações: `confirmNote` e `resetAll`.
+- **`useChats.js`**: histórico de chats do chatbot (novo, abrir, excluir, título e memória de cada chat), salvo em `localStorage` na chave `gestoria.chats.v1`.
 
 ### `src/components/`
 
 - **`Sidebar.jsx`**: menu lateral com seis entradas.
 - **`Topbar.jsx`**: logotipo, status de sincronização, contador de itens catalogados (produtos diferentes, pelo nome, em todas as notas) e menu do perfil (nome, e-mail, números, editar perfil, falar com o chatbot, exportar dados em JSON e restaurar demonstração).
 - **`Overlays.jsx`**: `Modal` e `Toast`.
-- **`ConfirmDialog.jsx`**: pop-up de confirmação verde com letras brancas, fundo da aplicação translúcido e botões Cancelar e Confirmar (Esc ou clique fora cancelam). Usado para apagar nota fiscal.
+- **`ConfirmDialog.jsx`**: pop-up de confirmação verde com letras brancas, fundo da aplicação translúcido e botões Cancelar e Confirmar (Esc ou clique fora cancelam). Usado para apagar nota fiscal e chat do chatbot.
 - **`PageHead.jsx`**: linha de destaque e título.
 - **`FilterBar.jsx`**: período (Semana, Mês e Personalizado com data inicial e final), setas, atalho "Últimos 30 dias" e filtros de categoria e estabelecimento.
 - **`TabRow.jsx`**: abas, legenda e botão "Gerar planilha" (abre a prévia em modal; em Notas fiscais rola até a prévia da página).
 - **`SheetPreview.jsx`**: prévia das abas Detalhada e Simples (alternáveis) e botão de download.
 - **`LineChart.jsx`**: gráfico de linha em SVG com curva monotônica e tooltip.
 - **`Donut.jsx`**: rosca de categorias com segmentos clicáveis.
+- **`Relogio.jsx`**: `useAgora` (data e hora atualizadas a cada segundo, horário de Fortaleza) e `DataAtual` (data por extenso, usada no cabeçalho do Início).
 - **`Icon.jsx`**: ícones SVG.
 
 ### `src/pages/`
@@ -168,7 +183,7 @@ gestoria/
 - **`FinVisao.jsx`**: seis indicadores em duas linhas de três (Gasto alimentar no período, Gasto não alimentar, Total pago no período, Variação do gasto, Compras registradas e Valor médio por compra), gráfico de linha, total por estabelecimento, rosca por categoria e destaques em frase.
 - **`FinDetalhamento.jsx`**: "Tabela comparativa de menor preço" (com rolagem vertical e horizontal), frase de análise e atalho para as notas.
 - **`Notas.jsx`**: histórico de notas (sem coluna de categoria) com apenas os itens alimentares, busca, exclusão com pop-up de confirmação e prévia da planilha.
-- **`Chatbot.jsx`**: conversa com sugestões e campo de texto.
+- **`Chatbot.jsx`**: histórico de chats, conversa com respostas estruturadas, animação de carregamento, sugestões recolhíveis, seletor de intervalo do relatório e pop-up para apagar chat (seção 15).
 - **`Configuracoes.jsx`**: edição de nome e e-mail e restauração dos dados.
 
 ---
@@ -253,13 +268,13 @@ Arquivo `.xlsx` com duas abas, ambas com linha final de total (fórmula `SUM`), 
 A categoria principal é a de maior gasto naquela compra (empate: ordem alfabética). Com filtro de categoria ou estabelecimento ativo, a aba Simples considera só os itens filtrados.
 
 ### Chatbot
-Responde por regras e consultas aos dados, sem modelo de linguagem. Entende: gasto total (mês ou semana), gasto por categoria, onde gastou mais, última compra, dia mais caro, quantidade de compras e onde comprar um item mais barato. O histórico da conversa fica em memória e se perde ao recarregar.
+Responde com o Google Gemini, que consulta as notas por ferramentas; sem chave ou sem servidor, responde pelas regras locais. Detalhes na seção 15.
 
 ---
 
 ## 8. Base de dados (NFC-e fictícias) e como trocá-la
 
-Toda a base fica em **`src/data/notas.json`**. Para usar outra base, basta substituir esse arquivo e conferir com `npm run validar`. Emitentes, categorias e a data de "hoje" (último dia da base) são lidos do próprio JSON, sem alterar código.
+Toda a base fica em **`src/data/notas.json`**. Para usar outra base, basta substituir esse arquivo e conferir com `npm run validar`. Emitentes, categorias e a data de "hoje" com `VITE_DATA_REAL=false` (último dia da base) são lidos do próprio JSON, sem alterar código.
 
 ### Base atual
 1.000 notas fictícias de alimentos (4.575 itens), de 01/08/2024 a 30/09/2026, de 8 emitentes com CNPJ, 64 produtos e unidades un, kg e dz (quantidades fracionadas em kg). Usada em Finanças, Notas fiscais e Chatbot.
@@ -340,7 +355,7 @@ Regras (conferidas por `npm run validar`):
 - **Nova tela:** criar `src/pages/Nova.jsx`, registrar a rota em `src/App.jsx` e a entrada em `NAV` (`src/components/Sidebar.jsx`).
 - **Nova categoria:** incluir a cor em `CATS` (`seed.js`) (categorias novas recebem automaticamente a próxima cor livre de `PALETTE`, com 30 cores reservadas).
 - **Novo estabelecimento:** incluir o emitente em `emitentes` e usar o `id` dele nas notas (`notas.json`).
-- **Nova pergunta do chatbot:** incluir uma condição em `chatAnswer()` (`src/lib/chat.js`).
+- **Nova pergunta do chatbot:** incluir uma condição em `responder()` (`src/lib/chat.js`, regras locais) e, se for uma nova consulta para o Gemini, declarar a ferramenta em `FERRAMENTAS` (`src/lib/llm.js`) e tratá-la em `executarFerramenta()`.
 - **Paleta:** variáveis no início de `src/styles/base.css`.
 
 ---
@@ -376,6 +391,7 @@ Baseada no código do projeto `GestorIA-Frontend-feature-auth` (API Django com J
 |---|---|
 | `VITE_API_URL` | Endereço da API (padrão `http://localhost:8000`). |
 | `VITE_MOCK_AUTH` | `true` usa contas locais de demonstração, sem backend; `false` usa a API. |
+| `VITE_DATA_REAL` | `true` (padrão) usa a data do computador como "hoje"; `false` usa o último dia da base (seção 16). |
 
 O padrão é `VITE_MOCK_AUTH=false`: é preciso ter o backend (e o Postgres do Docker) rodando em `VITE_API_URL`. Para testar sem backend, troque para `true` e reinicie o `npm run dev`.
 
@@ -406,3 +422,55 @@ Botões de cancelar e descartar usam a classe `.btn.cancel` (vermelho), padrão 
 
 ### `nota-teste.xml`
 NFC-e fictícia baseada no modelo oficial do DANFE NFC-e, com 15 itens (10 alimentares e 5 não alimentares), descrições abreviadas como impressas pelo caixa, desconto, pagamento em dinheiro com troco e chave de acesso com dígito verificador. Campo criado só para o React: `<alimenticio>sim|nao</alimenticio>` em cada item, a sugestão inicial da etiqueta.
+
+---
+
+## 15. Chatbot
+
+### Gemini (Google)
+O chatbot usa o Google Gemini (API `generateContent`) para entender a pergunta e redigir a resposta. Os números continuam vindo das notas: o Gemini chama ferramentas (`consultar_periodo`, `consultar_produto`, `consultar_categoria`, `ultima_compra` e `plano_economia`) que o navegador executa sobre os dados do app (`src/lib/chat.js`).
+
+```
+Chatbot.jsx → services/llm.js → /api/chat (server/gemini-proxy.js, guarda a chave) → Gemini
+                    ↑ executa as ferramentas (functionCall) sobre as notas e devolve o resultado (functionResponse)
+```
+
+**Onde colocar a chave:** no arquivo `.env.local`, na raiz do projeto (mesma pasta do `package.json`):
+
+```
+GEMINI_API_KEY=sua_chave_aqui
+GEMINI_MODEL=gemini-3.8-flash
+```
+
+A chave é criada no Google AI Studio (aistudio.google.com → Get API key). Depois de salvar, reinicie o `npm run dev`. `GEMINI_MODEL` é opcional (padrão `gemini-3.8-flash`).
+
+**Para conferir:** abra `http://localhost:5173/api/chat/status?testar=1`. Com a chave e o modelo certos, aparece `"teste":"ok"`; se não, o campo `detalhe` traz a mensagem do Google (chave inválida, modelo inexistente, cota esgotada etc.).
+
+**Para a chave não vazar:**
+- `.env.local` está no `.gitignore`. Confira com `git status` que ele não aparece antes de cada commit.
+- Nunca coloque a chave em `.env`, `.env.example` ou em variáveis que começam com `VITE_`: essas vão para o Git ou para o código do navegador.
+- A chave é lida só pelo `vite.config.js` e usada só em `server/gemini-proxy.js` (cabeçalho `x-goog-api-key`). Ela não aparece no navegador nem na pasta `dist`.
+- Não compartilhe o `.env.local` junto com o projeto (zip, e-mail, entrega). Se a chave já tiver sido exposta, apague-a no Google AI Studio e gere outra.
+
+**Sem chave, sem servidor ou Gemini lento:** o chatbot responde pelas regras locais e avisa uma vez por chat ("Resposta calculada pelas regras locais do GestorIA: …", com o motivo). O navegador espera no máximo 45 s e o servidor 40 s por chamada, então o chat não fica travado. A pasta `dist` publicada numa hospedagem estática não tem o servidor `/api/chat`: nesse caso o chatbot usa sempre as regras locais.
+
+**Restrições garantidas no servidor:** a instrução de sistema é montada em `server/gemini-proxy.js` (a partir de `src/lib/llm.js`), e o navegador não consegue enviar outra. Perguntas evidentemente fora do escopo nem chegam ao Gemini.
+
+### Comportamento
+- Atende **apenas** a análise financeira do consumo alimentar: gastos, categorias, produtos, mercados, relatórios e planos para economizar. Outros assuntos recebem uma recusa educada e a lista do que ele pode fazer.
+- Não inventa dados: se o período não tem compras ou falta informação, diz o que aconteceu e informa de quando a quando há registros.
+- Memória: cada chat guarda o último assunto e período ("e em setembro?" repete o assunto com o novo período), e o Gemini recebe as últimas 12 mensagens do chat.
+- Histórico de chats na barra lateral (títulos gerados pelo assunto), **+ Novo chat** e **×** para excluir, com o pop-up de confirmação. Os chats ficam em `localStorage` (chave `gestoria.chats.v1`).
+- **Gerar relatório** abre a escolha do intervalo (De / Até). "Como posso economizar?" monta um plano com base nos últimos 90 dias com registro.
+- Sugestões recolhíveis pela seta no canto do quadro (preferência salva no navegador) e animação de carregamento enquanto a resposta é preparada.
+
+### Períodos entendidos
+hoje, ontem, esta semana, semana passada, este mês, mês passado, nome do mês (com ou sem ano), ano, últimos N dias/semanas/meses, datas (01/08 a 15/08, 01/08/2026 até 15/09/2026), "desde 01/09" e "todo o histórico".
+
+---
+
+## 16. Data atual
+
+- Por padrão (ou com `VITE_DATA_REAL=true` no `.env`), o app trata a data do computador como "hoje": Início, filtros de período e Chatbot (que informa a data ao Gemini). `today()` usa a data local (`isoLocal`), sem o desvio de fuso do `toISOString` (que, em Fortaleza, virava o dia às 21h).
+- O cabeçalho do Início mostra a data atual (`DataAtual`, em `Relogio.jsx`). O horário é acompanhado a cada segundo (`useAgora`, horário de Fortaleza), então a data vira exatamente à meia-noite sem recarregar a página; ao passar o mouse, aparece a data com a hora.
+- Como a base de notas termina em 30/09/2026, "este mês" pode aparecer vazio com a data real. Para a demonstração, use `VITE_DATA_REAL=false` (volta a usar o último dia da base). Depois de mudar o `.env`, reinicie o `npm run dev`.
