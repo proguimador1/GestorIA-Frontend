@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Icon from './Icon.jsx'
 import { useApp } from '../store/AppContext.jsx'
-import { ABAS, exportSheet } from '../lib/export.js'
+import { ABAS, exportSheet, linhasExtremos } from '../lib/export.js'
 import { brl, sum } from '../lib/utils.js'
 
 // Prévia da planilha antes de baixar: duas abas ("Detalhada" e "Simples"), cada uma com o total no rodapé.
@@ -13,6 +13,16 @@ export default function SheetPreview() {
   const rows = dados[aba]
   const ne = new Set(dados.Detalhada.map(r => r[1])).size
   const baixar = async () => { await exportSheet(dados, F.mode, fin.range()); toast('Planilha gerada') }
+  // Linhas Máximo e Mínimo do rodapé (as mesmas da planilha baixada), com o estabelecimento e o item de cada valor.
+  const extremos = linhasExtremos(ABAS[aba], rows)
+  const extremo = x => {
+    const cor = x.tipo === 'max' ? 'var(--red)' : 'var(--g)', st = { padding: '8px 12px', fontWeight: 600, color: cor }
+    return (
+      <tr key={x.tipo + x.col}>{head.map((_, c) => c === 0 ? <td key={c} style={{ ...st, whiteSpace: 'nowrap' }}>{x.nome}</td>
+        : c === x.col ? <td key={c} style={{ ...st, textAlign: 'right' }}>{brl(x.valor)}</td>
+          : c in x.rotulos ? <td key={c} style={{ ...st, fontWeight: 500, fontSize: 14 }}>{x.rotulos[c]}</td> : <td key={c} />)}</tr>
+    )
+  }
   const alinhar = c => moeda.includes(c) || typeof rows[0]?.[c] === 'number' ? 'right' : 'left'
   return (
     <div className="card" id="prev">
@@ -33,6 +43,7 @@ export default function SheetPreview() {
             {!rows.length && <tr><td colSpan={head.length} className="lab" style={{ padding: 16 }}>Nenhum item neste período.</td></tr>}
             {rows.length > 5 && <tr><td colSpan={head.length} className="lab" style={{ padding: '8px 12px' }}>… e mais {rows.length - 5} linhas</td></tr>}
             <tr><td colSpan={total} style={{ padding: '8px 12px', fontWeight: 600 }}>Total</td><td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600 }}>{brl(sum(rows.map(r => r[total])))}</td>{head.slice(total + 1).map((_, k) => <td key={k} />)}</tr>
+            {extremos.map(extremo)}
           </tbody>
         </table>
       </div>
@@ -41,7 +52,7 @@ export default function SheetPreview() {
           <span key={a} onClick={() => setAba(a)} style={{ padding: '7px 16px', fontSize: 14, cursor: 'pointer', ...(aba === a ? { fontWeight: 600, background: 'var(--card)', borderTop: '2px solid var(--dg)' } : { color: 'var(--mute)' }) }}>{a}</span>
         ))}
       </div>
-      <div className="lab" style={{ fontSize: 14, marginTop: 14 }}>Duas abas: Detalhada (um item por linha) e Simples (uma compra por linha, com a categoria de maior gasto). Toque nas abas para conferir antes de baixar.</div>
+      <div className="lab" style={{ fontSize: 14, marginTop: 14 }}>Duas abas: Detalhada (um item por linha) e Simples (uma compra por linha, com a categoria de maior gasto). No rodapé: Total, Máximo e Mínimo dos valores em R$, com o estabelecimento e o item a que cada um se refere. Toque nas abas para conferir antes de baixar.</div>
     </div>
   )
 }

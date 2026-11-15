@@ -87,7 +87,7 @@ export default function Chatbot() {
       <div className="chatwrap mt">
         <aside className="card chatside">
           <button className="btn dk" style={{ width: '100%', justifyContent: 'center' }} onClick={novo}>+ Novo chat</button>
-          <div className="mono lab" style={{ margin: '18px 4px 8px' }}>Histórico</div>
+          <div className="mono lab" style={{ margin: '18px 4px 8px', fontWeight: 700 }}>Histórico</div>
           <div className="scr chatlist">
             {lista.map(c => (
               <div key={c.id} className={'chatitem' + (c.id === ativo ? ' on' : '')} onClick={() => abrir(c.id)} title={c.title}>

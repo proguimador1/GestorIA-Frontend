@@ -105,7 +105,7 @@ body {
 }
 .logo {
   font:
-    700 var(--fs-xl) "Fraunces",
+    700 36px "Fraunces", /* 1,5 x 24 px */
     Georgia,
     serif;
   flex: 1;

@@ -34,7 +34,7 @@ export default function Topbar() {
       <div className="av" title="Meu perfil" onClick={() => setOpen(o => !o)}>{u.name[0]}</div>
       {open && (
         <div className="pmenu">
-          <div className="pm-h"><div className="av big">{u.name[0]}</div><div><b>{u.name}</b><div className="lab" style={{ fontSize: 14 }}>{u.email}</div></div></div>
+          <div className="pm-h"><div className="av big">{u.name[0]}</div><div className="pm-id"><b>{u.name}</b><div className="lab pm-email" title={u.email}>{u.email}</div></div></div>
           <div className="pm-s">
             <div><b>{S.notes.length}</b><span>notas</span></div>
             <div><b>{S.catalog}</b><span>itens catalogados</span></div>

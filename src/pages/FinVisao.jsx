@@ -1,9 +1,10 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import LineChart from '../components/LineChart.jsx'
 import Donut from '../components/Donut.jsx'
 import { useApp } from '../store/AppContext.jsx'
-import { EST, NAO_ALIM } from '../data/seed.js'
-import { brl, dm, estName, pct, sum } from '../lib/utils.js'
+import { EST, NAO_ALIM, estColor } from '../data/seed.js'
+import { MES, brl, dm, dt, estName, iso, pct, sum } from '../lib/utils.js'
 
 export const Delta = ({ a, b }) => b ? <span className={a >= b ? 'up' : 'dn'}>{a >= b ? '▲' : '▼'} {pct(Math.abs(a / b - 1) * 100)}</span> : '—'
 // Preposição "a" com a contração correta: ao período anterior, à semana anterior, a julho
@@ -11,11 +12,43 @@ const aoA = pl => pl.startsWith('o ') ? 'ao ' + pl.slice(2) : pl.startsWith('a '
 const Kpi = ({ label, value, sub, hl }) => <div className={'card kpi' + (hl ? ' hl' : '')}><div className="kt">{label}</div><div className="v">{value}</div>{sub && <div className="s">{sub}</div>}</div>
 const Tog = ({ opts, val, onSel }) => <div className="tog">{opts.map(([k, t]) => <span key={k} className={val === k ? 'on' : ''} onClick={() => onSel(k)}>{t}</span>)}</div>
 const Head = ({ title, sub, children }) => (<><div className="ct">{title}</div><div className="cs">{sub}</div>{children && <div style={{ marginTop: 16 }}>{children}</div>}</>)
+// Tons de verde para o gráfico de pizza de métodos de pagamento.
+const VERDES = ['#2E4429', '#4A6B3E', '#7E9A6B', '#A9BF94', '#5B8E7D', '#C9D8B8']
+
+// Os 6 meses que terminam no mês de "fim" (AAAA-MM).
+function ultimosMeses(fim, n = 6) {
+  const d = dt(fim), y = d.getUTCFullYear(), m = d.getUTCMonth()
+  return Array.from({ length: n }, (_, k) => iso(new Date(Date.UTC(y, m - (n - 1) + k, 1))).slice(0, 7))
+}
+
+// Visualização "Por mês" da Evolução dos gastos (vinda da branch develop): gasto com alimentos em cada um
+// dos 6 meses que terminam no fim do período. Aqui é calculada a partir das notas, com os filtros ativos.
+function GastoPorMes({ fim }) {
+  const { F, fin } = useApp()
+  const meses = ultimosMeses(fim)
+  const it = fin.items([meses[0] + '-01', fim]).filter(i => i.cat !== NAO_ALIM)
+  const linhas = meses.map(m => ({ m, v: sum(it.filter(i => i.n.date.startsWith(m)).map(i => i.total)) }))
+  const max = Math.max(1, ...linhas.map(l => l.v))
+  const filtros = [F.cat, F.est && estName(F.est)].filter(Boolean).join(' · ')
+  return (
+    <div style={{ marginTop: 20 }}>
+      {linhas.map(({ m, v }) => (
+        <div key={m} style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}><b style={{ fontSize: 16, textTransform: 'capitalize' }}>{MES[+m.slice(5) - 1]} {m.slice(0, 4)}</b><span className="serif" style={{ fontWeight: 600, fontSize: 18 }}>{brl(v)}</span></div>
+          <div style={{ height: 14, borderRadius: 7, background: '#e5e1d0', marginTop: 6 }}><div style={{ height: 14, borderRadius: 7, width: (v / max * 100) + '%', background: 'var(--g)' }} /></div>
+        </div>
+      ))}
+      <div className="lab" style={{ fontSize: 14 }}>Total dos 6 meses: {brl(sum(linhas.map(l => l.v)))}{filtros ? ' · ' + filtros : ''}</div>
+    </div>
+  )
+}
 
 // Aba "Visão geral": indicadores, evolução, estabelecimentos, categorias e destaques.
 export default function Visao() {
   const { F, setF, fin, catColor } = useApp()
   const nav = useNavigate()
+  const [pizza, setPizza] = useState('cat')    // 'cat' = categoria alimentar; 'pag' = método de pagamento
+  const [selPag, setSelPag] = useState('')
   const r = fin.range(), pr = fin.prevRange(), pl = fin.prevLab()
   const it = fin.items(r), tot = sum(it.map(i => i.total)), nn = new Set(it.map(i => i.n.id)).size
   const pit = fin.items(pr), pt = sum(pit.map(i => i.total)), pn = new Set(pit.map(i => i.n.id)).size
@@ -30,6 +63,22 @@ export default function Visao() {
   const catMap = {}; fin.items(r, { cat: '' }).filter(i => !F.est || i.n.est === F.est).forEach(i => { if (i.cat !== NAO_ALIM) catMap[i.cat] = (catMap[i.cat] || 0) + i.total })
   const naoAlim = totNaoAlim
   const catD = Object.entries(catMap).sort((a, b) => b[1] - a[1]), cTot = sum(catD.map(c => c[1]))
+  // Mesma lógica do gráfico de categorias, agrupando o gasto alimentar de cada nota pelo método de pagamento.
+  const pagMap = {}; fin.items(r, { cat: '' }).filter(i => i.cat !== NAO_ALIM).forEach(i => { const k = i.n.pay || 'Não informado'; pagMap[k] = (pagMap[k] || 0) + i.total })
+  const pagD = Object.entries(pagMap).sort((a, b) => b[1] - a[1]), pTot = sum(pagD.map(c => c[1]))
+  const pagColor = k => VERDES[Math.max(0, pagD.findIndex(c => c[0] === k)) % VERDES.length]
+  const porPag = pizza === 'pag'
+  const dados = porPag ? pagD : catD, dTot = porPag ? pTot : cTot, dSel = porPag ? selPag : F.cat, dCor = porPag ? pagColor : catColor
+  const escolher = v => porPag ? setSelPag(selPag === v ? '' : v) : setF({ cat: F.cat === v ? '' : v })
+  // Período sem nenhuma compra (independente dos filtros): as 4 células de baixo mostram, centralizados,
+  // o aviso em cinza e o botão cinza "Cadastrar meus itens agora", que leva à aba Cadastro.
+  const semCompras = !fin.notesIn(r, { est: '' }).length
+  const semCadastro = (
+    <div className="vazio">
+      <span>Nada foi cadastrado neste período.</span>
+      <button className="btn ghost" onClick={() => nav('/cadastro')}>Cadastrar meus itens agora</button>
+    </div>
+  )
 
   const key = F.bar === 'total' ? 't' : 'm'
   const bars = EST.map(e => {
@@ -59,53 +108,55 @@ export default function Visao() {
         <Kpi label="Valor médio por compra" value={brl(avg)} sub={pavg ? <><Delta a={avg} b={pavg} /> contra {pl} ({brl(pavg)})</> : `sem dados em ${cmp}`} />
       </div>
 
-      {/* Grade 2 x 2: cada linha tem células da mesma altura (Evolução x Estabelecimento; Atenção x Categoria) */}
+      {/* Grade 2 x 2: duas colunas iguais (1,5 coluna das células de cima cada), separadas pelo mesmo espaço das células de cima */}
       <div className="vgrid mt">
         <div className="card">
-          <Head title="Evolução dos gastos" sub="Quanto você gastou em cada dia com compra, em R$">
-            <Tog opts={[['dia', 'Por dia'], ['acum', 'Soma acumulada']]} val={F.line} onSel={v => setF({ line: v })} />
+          <Head title="Evolução dos gastos" sub={F.line === 'mes' ? 'Gasto com alimentos em cada mês, em R$' : 'Quanto você gastou em cada dia com compra, em R$'}>
+            <Tog opts={[['dia', 'Por dia'], ['acum', 'Soma acumulada'], ['mes', 'Por mês']]} val={F.line} onSel={v => setF({ line: v })} />
           </Head>
-          <LineChart byDay={byDay} range={r} mode={F.line} />
+          {F.line === 'mes' ? <GastoPorMes fim={r[1]} /> : <LineChart byDay={byDay} range={r} mode={F.line} vazio={semCompras ? semCadastro : undefined} />}
         </div>
 
         <div className="card">
           <Head title="Total gasto por estabelecimento" sub="Quanto foi gasto em cada mercado e a média por compra">
             <Tog opts={[['total', 'Total'], ['media', 'Média por compra']]} val={F.bar} onSel={v => setF({ bar: v })} />
           </Head>
-          <div className="scr" style={{ maxHeight: bars.length > 3 ? 330 : 'none', paddingRight: 12, marginTop: 20 }}>
+          {semCompras ? semCadastro : <div className="scr" style={{ maxHeight: bars.length > 3 ? 330 : 'none', paddingRight: 12, marginTop: 20 }}>
             {bars.map(b => (
               <div key={b.e.id} className="hov" onClick={() => setF({ est: F.est === b.e.id ? '' : b.e.id })} style={{ marginBottom: 20, opacity: F.est && F.est !== b.e.id ? .45 : 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}><b style={{ fontSize: 17 }}>{b.e.name}</b><span className="serif" style={{ fontWeight: 600, fontSize: 20 }}>{brl(b[key])}</span></div>
-                <div style={{ height: 16, borderRadius: 8, background: '#e5e1d0', marginTop: 8 }}><div style={{ height: 16, borderRadius: 8, width: (b[key] / bm * 100) + '%', background: 'var(--g)' }} /></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}><b style={{ fontSize: 17, display: 'flex', alignItems: 'center', gap: 8 }}><i className="dot" style={{ background: estColor(b.e.id), flex: 'none' }} />{b.e.name}</b><span className="serif" style={{ fontWeight: 600, fontSize: 20, whiteSpace: 'nowrap' }}>{brl(b[key])}</span></div>
+                <div style={{ height: 16, borderRadius: 8, background: '#e5e1d0', marginTop: 8 }}><div style={{ height: 16, borderRadius: 8, width: (b[key] / bm * 100) + '%', background: estColor(b.e.id) }} /></div>
                 <div className="lab" style={{ fontSize: 14, marginTop: 7 }}>{b.n} compra{b.n > 1 ? 's' : ''} {fin.phrase()} · {brl(b.m)} por compra</div>
               </div>
             ))}
             {!bars.length && <div className="lab">Sem compras no período.</div>}
-          </div>
+          </div>}
         </div>
 
         <div className="card">
           <Head title="O que chamou atenção" sub="Destaques calculados a partir das suas notas" />
           <div className="ins-list">
             {ins.map((i, k) => <div key={k} className="ins"><i className="dot" style={{ background: i.c }} /><p>{i.t}<small onClick={i.go}>{i.l}</small></p></div>)}
-            {!ins.length && <span className="lab">Cadastre notas para ver destaques.</span>}
+            {!ins.length && (semCompras ? semCadastro : <span className="lab">Cadastre notas para ver destaques.</span>)}
           </div>
         </div>
 
         <div className="card">
-          <Head title="Consumo por categoria alimentar" sub="Quanto cada categoria representa do total gasto" />
-          {catD.length ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginTop: 20 }}>
-              <div style={{ flex: 'none' }}><Donut data={catD} tot={cTot} sel={F.cat} color={catColor} onSel={v => setF({ cat: v })} /></div>
-              <div className="leg scr" style={{ flex: 1, minWidth: 0 }}>
-                {catD.map(([c, v]) => (
-                  <div key={c} className="legrow" onClick={() => setF({ cat: F.cat === c ? '' : c })}>
-                    <i className="dot" style={{ background: catColor(c) }} /><span title={c}>{c}</span><b>{pct(v / cTot * 100)}</b><span className="lab" style={{ textAlign: 'right' }}>{brl(v)}</span>
+          <Head title={porPag ? 'Gasto por método de pagamento' : 'Consumo por categoria alimentar'} sub={porPag ? 'Quanto do gasto com alimentos foi pago em cada forma de pagamento' : 'Quanto cada categoria representa do total gasto'}>
+            <Tog opts={[['cat', 'Categoria'], ['pag', 'Pagamento']]} val={pizza} onSel={setPizza} />
+          </Head>
+          {dados.length ? (
+            <div className="pizza">
+              <div style={{ flex: 'none' }}><Donut data={dados} tot={dTot} sel={dSel} color={dCor} onSel={escolher} /></div>
+              <div className="leg scr">
+                {dados.map(([c, v]) => (
+                  <div key={c} className="legrow" onClick={() => escolher(c)}>
+                    <i className="dot" style={{ background: dCor(c) }} /><span title={c}>{c}</span><b>{pct(v / dTot * 100)}</b><span className="lab" style={{ textAlign: 'right' }}>{brl(v)}</span>
                   </div>
                 ))}
               </div>
             </div>
-          ) : <div className="lab" style={{ marginTop: 20 }}>Sem dados.</div>}
+          ) : semCompras ? semCadastro : <div className="lab" style={{ marginTop: 20 }}>Sem dados.</div>}
           {naoAlim > 0 && <div className="lab" style={{ fontSize: 14, marginTop: 16 }}>Itens não alimentícios ({brl(naoAlim)}) não entram neste gráfico.</div>}
         </div>
       </div>

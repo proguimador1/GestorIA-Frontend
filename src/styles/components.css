@@ -28,12 +28,6 @@
   border-radius: 3px 3px 0 0;
   background: var(--dg);
 }
-.cap {
-  margin-left: auto;
-  font-size: var(--fs-sm);
-  color: var(--mute);
-  margin-right: 16px;
-}
 .btn {
   background: var(--btn);
   color: #fff;
@@ -279,6 +273,77 @@ thead th.str {
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 8px;
+}
+/* Finanças · Detalhamento: nomes das colunas em negrito, coluna do estabelecimento filtrado e melhor preço colorido */
+.comp th {
+  font-weight: 700;
+  color: var(--ink);
+}
+/* Colunas mais estreitas para caber pelo menos 3 estabelecimentos na tela:
+   nome do estabelecimento quebra em até 2 linhas, Item e Melhor preço com largura fixa */
+.comp th.r {
+  white-space: normal;
+  font-size: 11px;
+  line-height: 1.35;
+  vertical-align: bottom;
+}
+.comp th.r,
+.comp td.r {
+  width: 120px;
+  min-width: 120px;
+}
+.comp .stl {
+  width: 210px;
+  min-width: 210px;
+  max-width: 210px;
+  white-space: normal;
+}
+.comp .str {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+  white-space: normal;
+}
+.comp th.sel,
+.comp td.sel {
+  background: #e3ead6;
+}
+.melhor {
+  display: inline-flex;
+  align-items: baseline;
+  column-gap: 8px;
+  flex-wrap: wrap;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border-left: 3px solid var(--c);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  color: var(--ink);
+}
+.melhor .mp {
+  font:
+    600 var(--fs-base) "Fraunces",
+    Georgia,
+    serif;
+  color: var(--dg);
+}
+/* Notas fiscais · tabela de notas no mesmo padrão da tabela comparativa do Detalhamento (.comp):
+   cabeçalho em negrito na cor do texto; células em Instrument Sans 15 px na cor do texto */
+.notas-tab th {
+  font-weight: 700;
+  color: var(--ink);
+}
+/* Notas fiscais · itens da nota: nomes das colunas em negrito e linhas horizontais mais marcadas */
+.itens-nota th {
+  background: none;
+  font-weight: 700;
+  color: var(--ink);
+  border-bottom: 2px solid #b9b39c;
+}
+.itens-nota td {
+  border-bottom: 1px solid #cfc9b2;
+}
+.itens-nota tr:last-child td {
+  border-bottom: 0;
 }
 .note {
   margin-top: 18px;
@@ -859,6 +924,23 @@ select.f {
   gap: 14px;
   align-items: center;
 }
+/* Nome e e-mail: o e-mail quebra em qualquer ponto para caber no quadro, mesmo se for longo */
+/* Notas fiscais · título "Histórico de notas": 1,5 x (12 → 18 px), preto e em negrito */
+.mono.hist-tit {
+  font-size: 18px;
+  font-weight: 700;
+  color: #000;
+}
+.pm-id {
+  flex: 1;
+  min-width: 0;
+}
+.pm-email {
+  font-size: 12.5px;
+  line-height: 1.35;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
 .pm-s {
   display: flex;
   justify-content: space-between;
@@ -1066,12 +1148,40 @@ select.f {
   color: var(--mute);
 }
 
-/* Finanças · Visão geral em grade 2 x 2: as células de cada linha têm a mesma altura */
+/* Finanças · Visão geral em grade 2 x 2: as células de cada linha têm a mesma altura.
+   Duas colunas iguais (cada uma equivale a 1,5 das 3 colunas das células de cima), com o mesmo espaço
+   de 18 px das células de cima entre elas, para as bordas não se tocarem. */
 .vgrid {
   display: grid;
-  grid-template-columns: minmax(0, 52fr) minmax(0, 48fr);
-  gap: 26px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
   align-items: stretch;
+}
+/* Rosca + legenda: lado a lado quando há espaço; a legenda desce para baixo da rosca na coluna estreita */
+.pizza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 20px;
+}
+.pizza .leg {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+/* Finanças sem compras no período: aviso em cinza (ou o botão para o Cadastro) centralizado no espaço vazio do bloco */
+.vazio {
+  flex: 1;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  color: var(--mute);
+  font-size: var(--fs-md);
 }
 .vgrid > .card {
   display: flex;
@@ -1302,7 +1412,7 @@ input.r {
     monospace;
   letter-spacing: 0;
   text-transform: uppercase;
-  color: var(--g);
+  color: var(--dg); /* mesma cor dos títulos das demais células (.ct) */
 }
 .kpis .kpi.hl .kt {
   color: #dbe6cf;
@@ -1395,4 +1505,40 @@ input.r {
   padding: 0;
   font-family: inherit;
   color: var(--red);
+}
+/* Mesma dinâmica dos cartões da aba Início (.act) em todos os botões do projeto:
+   transição de 0,15 s; ao passar o mouse, o botão sobe 3 px e ganha contorno verde. */
+.btn,
+.tog span,
+.seg,
+.tab,
+.chip:not(.dt),
+.chip.dt button,
+.sugseta,
+.tag.tipo,
+.pw button {
+  transition: 0.15s;
+}
+.btn:not(:disabled):hover,
+.tog span:hover,
+.seg:hover,
+.tab:hover,
+.chip:not(.dt):hover,
+.chip.dt button:hover,
+.sugseta:hover,
+.tag.tipo:hover,
+.pw button:hover {
+  transform: translateY(-3px);
+}
+/* Botões sem borda: o contorno verde vem de uma sombra, para não mudar o tamanho */
+.btn:not(:disabled):hover {
+  box-shadow: 0 0 0 1px var(--g);
+}
+/* Botões com borda: a borda fica verde, como nos cartões do Início */
+.btn.ghost:not(:disabled):hover,
+.seg:hover,
+.chip:not(.dt):hover,
+.sugseta:hover,
+.tag.tipo:hover {
+  border-color: var(--g);
 }

@@ -38,3 +38,6 @@ export function ensureEst(nome, cnpj) {
 export const PALETTE=['#D9822B','#A23B72','#3B6E8F','#6C4F9A','#2F8F83','#C9A227','#8F2D56','#5B8E7D','#D1495B','#EDAE49','#00798C','#30638E','#7A9E3B','#B5651D','#6D597A','#B56576','#E56B6F','#355070','#99B898','#E8A87C','#C38D9E','#41B3A3','#85A389','#9C6644','#588157','#BC6C25','#7B2CBF','#E76F51','#2A9D8F','#264653'];
 // Cor de uma categoria: fixa se conhecida; senão, a próxima cor livre da paleta (ordem alfabética das categorias novas).
 export const colorOf=(c,all)=>CATS[c]||PALETTE[all.filter(x=>!CATS[x]).sort().indexOf(c)%PALETTE.length]||CATS.Outros;
+// Cor fixa de cada estabelecimento (barras de Finanças e destaque do melhor preço), pela ordem de cadastro.
+const EST_CORES = ['#4A6B3E', '#C0402A', '#3B6E8F', '#E3A53A', '#8C5A3C', '#6C4F9A', '#2F8F83', '#D9822B', '#A23B72', '#30638E', '#7A9E3B', '#B5651D']
+export const estColor = id => EST_CORES[Math.max(0, EST.findIndex(e => e.id === id)) % EST_CORES.length]

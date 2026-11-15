@@ -1,15 +1,14 @@
 import Icon from './Icon.jsx'
 import { useApp } from '../store/AppContext.jsx'
 import { shiftAnchor } from '../lib/finance.js'
-import { add, dm, today } from '../lib/utils.js'
+import { dm } from '../lib/utils.js'
 import { EST } from '../data/seed.js'
 
-// Barra de período (Semana, Mês, Personalizado com data inicial e final), atalho e filtros opcionais.
+// Barra de período (Semana, Mês, Personalizado com data inicial e final) e filtros opcionais.
 export default function FilterBar({ chips }) {
   const { F, setF, fin, catColor } = useApp()
   const [s, e] = fin.range()
   const mode = m => setF({ mode: m, anchor: m === 'custom' ? F.anchor : F.anchor })
-  const last30 = () => setF({ mode: 'custom', from: add(today(), -29), to: today() })
   const setFrom = v => v && setF({ from: v, to: v > F.to ? v : F.to })
   const setTo = v => v && setF({ to: v, from: v < F.from ? v : F.from })
   return (
@@ -29,8 +28,6 @@ export default function FilterBar({ chips }) {
           <button onClick={() => setF({ anchor: shiftAnchor(F, 1) })}><Icon n="r" s={15} /></button>
         </span>
       )}
-      <span className="vr" /><span className="lab mono" style={{ fontSize: 12 }}>Atalho</span>
-      <span className="sc" onClick={last30}>Últimos 30 dias</span>
       {chips && (<>
         <div style={{ flexBasis: '100%' }} />
         {F.cat

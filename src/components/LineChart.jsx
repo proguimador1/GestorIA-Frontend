@@ -21,7 +21,8 @@ function mono(p) {
 }
 
 // Gráfico de linha: um ponto por dia com compra. mode: 'dia' ou 'acum'.
-export default function LineChart({ byDay, range: r, mode }) {
+// vazio: conteúdo mostrado no lugar do gráfico quando o período não tem compras (aviso e botão para o Cadastro).
+export default function LineChart({ byDay, range: r, mode, vazio }) {
   const [hov, setHov] = useState(null)
   const wrap = useRef(null)
   const [{ W, H }, setDim] = useState({ W: 580, H: 420 })
@@ -52,16 +53,16 @@ export default function LineChart({ byDay, range: r, mode }) {
     const b = e.currentTarget.getBoundingClientRect(), x = (e.clientX - b.left) / b.width * W
     setHov(g.pts.reduce((p, q) => Math.abs(q.x - x) < Math.abs(p.x - x) ? q : p))
   }
-  const body = !g ? <div className="empty" style={{ margin: 0 }}>Nenhuma compra neste período.<br />Que tal cadastrar uma nota?</div> : (
+  const body = !g ? (vazio || <div className="empty" style={{ margin: 0 }}>Nenhuma compra neste período.<br />Que tal cadastrar uma nota?</div>) : (
     <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} style={{ position: 'absolute', inset: 0 }}>
-      <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4A6B3E" stopOpacity=".28" /><stop offset="1" stopColor="#4A6B3E" stopOpacity="0" /></linearGradient></defs>
+      <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7E9A6B" stopOpacity=".38" /><stop offset="1" stopColor="#7E9A6B" stopOpacity="0" /></linearGradient></defs>
       {g.grid.map(t => (<g key={t.v}><line x1={L} x2={W - R} y1={t.y} y2={t.y} stroke="#d6d2c0" strokeDasharray="3 5" /><text x={L - 10} y={t.y + 4} textAnchor="end" fontSize="14" fill="#6B665A">{t.v ? 'R$ ' + t.v : 0}</text></g>))}
       {g.ticks.map(t => <text key={t.t} x={t.x} y={H - 10} textAnchor="middle" fontSize="14" fill="#6B665A">{t.t}</text>)}
       <path d={`${g.path} L${g.pts.at(-1).x},${g.y0} L${g.pts[0].x},${g.y0}Z`} fill="url(#ga)" />
-      <path d={g.path} fill="none" stroke="#2E4429" strokeWidth="2.6" />
-      {g.pts.map(p => <circle key={p.d} cx={p.x} cy={p.y} r="4" fill="#F3EFE3" stroke="#2E4429" strokeWidth="2" />)}
-      <line x1={a.x} x2={a.x} y1={a.y} y2={364} stroke="#2E4429" strokeDasharray="2 4" />
-      <circle cx={a.x} cy={a.y} r="7" fill="#2E4429" stroke="#F3EFE3" strokeWidth="3" />
+      <path d={g.path} fill="none" stroke="#4A6B3E" strokeWidth="2.6" />
+      {g.pts.map(p => <circle key={p.d} cx={p.x} cy={p.y} r="4" fill="#F3EFE3" stroke="#4A6B3E" strokeWidth="2" />)}
+      <line x1={a.x} x2={a.x} y1={a.y} y2={364} stroke="#4A6B3E" strokeDasharray="2 4" />
+      <circle cx={a.x} cy={a.y} r="7" fill="#4A6B3E" stroke="#F3EFE3" strokeWidth="3" />
       <g transform={`translate(${a.x + (a.x > 400 ? -212 : 20)},${Math.max(4, a.y - 6)})`}>
         <rect width="192" height="74" rx="12" fill="#2E4429" />
         <text x="16" y="24" fontSize="12" fill="#cfd8c0">{dm(a.d)}</text>
