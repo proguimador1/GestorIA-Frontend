@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useState } from 'react'
 import PageHead from '../components/PageHead.jsx'
 import TabRow from '../components/TabRow.jsx'
-import FilterBar from '../components/FilterBar.jsx'
+import FilterBar, { Filtros, Periodo } from '../components/FilterBar.jsx'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import { useApp } from '../store/AppContext.jsx'
 import { NAO_ALIM } from '../data/seed.js'
@@ -30,18 +30,22 @@ export default function Notas() {
     <>
       <PageHead eyebrow={'Notas fiscais · ' + fin.lab().toUpperCase()}>Nota por nota, item por item</PageHead>
       <TabRow tabs={[['nota', 'Por nota']]} active="nota" />
-      <FilterBar chips />
+      <div className="prancheta-topo">
+        <FilterBar />
+        <Periodo />
+      </div>
       <div className="card mt">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-          <div>
-            <div className="mono hist-tit">Histórico de notas</div>
-            <div className="lab" style={{ fontSize: 14, marginTop: 8 }}>
-              Toque numa nota para ver os itens comprados ·{' '}
-              <span className="sc" onClick={() => setF({ all: !F.all, open: null })}>{F.all ? `Voltar ao período (${fin.lab()})` : 'Ver histórico completo de notas'}</span>
-            </div>
+        <div>
+          <div className="mono hist-tit">Histórico de notas</div>
+          <div className="lab" style={{ fontSize: 14, marginTop: 8 }}>
+            Toque numa nota para ver os itens comprados ·{' '}
+            <span className="sc" onClick={() => setF({ all: !F.all, open: null })}>{F.all ? `Voltar ao período (${fin.lab()})` : 'Ver histórico completo de notas'}</span>
           </div>
-          <input style={{ maxWidth: 380, borderRadius: 20 }} placeholder="Buscar item, nota ou estabelecimento" value={F.q} onChange={e => setF({ q: e.target.value })} />
         </div>
+        {/* Filtros de categoria e estabelecimento na mesma linha da busca, como na prancheta */}
+        <Filtros>
+          <input className="busca" placeholder="Buscar item, nota ou estabelecimento" value={F.q} onChange={e => setF({ q: e.target.value })} />
+        </Filtros>
         <div className="lab" style={{ fontSize: 14, margin: '10px 0 14px', textAlign: 'right' }}>
           Buscando em: {F.all ? 'todo o histórico' : fin.lab()} · {F.cat || 'todas as categorias'} · {F.est ? estName(F.est) : 'todos os estabelecimentos'}
         </div>
@@ -51,7 +55,7 @@ export default function Notas() {
             <tbody>
               {base.map(n => (
                 <Fragment key={n.id}>
-                  <tr className="hov" onClick={() => setF({ open: F.open === n.id ? null : n.id })} style={F.open === n.id ? { background: '#ece8d9' } : undefined}>
+                  <tr className="hov" onClick={() => setF({ open: F.open === n.id ? null : n.id })} style={F.open === n.id ? { background: '#eae3d2' } : undefined}>
                     <td>{dmy(n.date)}</td>
                     <td>{n.nf || '—'}</td>
                     <td><b style={{ fontWeight: 500 }}>{estName(n.est)}</b></td>
@@ -61,7 +65,7 @@ export default function Notas() {
                     <td className="r lab">{F.open === n.id ? '▴' : '▾'}</td>
                   </tr>
                   {F.open === n.id && (
-                    <tr style={{ background: '#ece8d9' }}><td colSpan={7} style={{ padding: '0 18px 18px' }}>
+                    <tr style={{ background: '#eae3d2' }}><td colSpan={7} style={{ padding: '0 18px 18px' }}>
                       <div style={{ background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: '6px 8px' }}>
                         <table className="itens-nota">
                           <thead><tr><th>Item</th><th>Quantidade</th><th className="r">Preço unitário</th><th className="r">Total do item</th></tr></thead>

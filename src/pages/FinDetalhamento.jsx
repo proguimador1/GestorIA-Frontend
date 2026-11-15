@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import Icon from '../components/Icon.jsx'
+import { Filtros } from '../components/FilterBar.jsx'
 import { useApp } from '../store/AppContext.jsx'
 import { EST, estColor } from '../data/seed.js'
 import { brl, estName, sum } from '../lib/utils.js'
@@ -36,6 +37,7 @@ export default function Detalhamento() {
     <>
       <div className="card mt" style={{ minWidth: 0 }}>
         <div className="ct">Tabela comparativa de menor preço{F.cat ? ' · ' + F.cat : ''}{F.est ? ' · ' + estName(F.est) : ''}</div>
+        <Filtros />
         <div className="cs" style={{ marginBottom: 20 }}>{F.est ? `Itens vendidos no ${estName(F.est)} comparados com os outros estabelecimentos. ` : ''}A cor verde representa o menor preço entre todos os estabelecimentos</div>
         {lines.length ? (<>
           <div className="scr" style={{ maxHeight: 560, border: '1px solid var(--line)', borderRadius: 14 }}>
@@ -43,7 +45,7 @@ export default function Detalhamento() {
               <thead><tr>
                 <th className="stl">Item</th>
                 {cols.map(e => <th key={e.id} className={'r' + (F.est === e.id ? ' sel' : '')}>{e.name}</th>)}
-                <th className="str" style={{ background: '#ece8d9' }}>Melhor preço</th>
+                <th className="str" style={{ background: '#eae3d2' }}>Melhor preço</th>
               </tr></thead>
               <tbody>{lines.map(({ k, m, lo, best, avg }) => (
                 <tr key={k}>

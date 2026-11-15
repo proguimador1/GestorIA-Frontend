@@ -1,12 +1,43 @@
 import Icon from './Icon.jsx'
 import { useApp } from '../store/AppContext.jsx'
 import { shiftAnchor } from '../lib/finance.js'
-import { dm } from '../lib/utils.js'
+import { dm, dmy } from '../lib/utils.js'
 import { EST } from '../data/seed.js'
 
-// Barra de período (Semana, Mês, Personalizado com data inicial e final) e filtros opcionais.
-export default function FilterBar({ chips }) {
+// Filtros de categoria e estabelecimento no estilo da prancheta: caixas bege com borda marrom.
+// Categoria escolhida vira um chip com a cor da categoria e × para limpar. children: itens extras na mesma linha (ex.: busca).
+export function Filtros({ children }) {
   const { F, setF, fin, catColor } = useApp()
+  return (
+    <div className="filtros">
+      {F.cat
+        ? <span className="filtro on"><i className="dot" style={{ background: catColor(F.cat) }} />Categoria: {F.cat}<button onClick={() => setF({ cat: '' })} aria-label="Limpar categoria" title="Limpar categoria">×</button></span>
+        : <select className="filtro" value="" onChange={ev => setF({ cat: ev.target.value })} aria-label="Categoria"><option value="">Categoria: todas</option>{fin.allCats().map(c => <option key={c}>{c}</option>)}</select>}
+      <select className="filtro" value={F.est} onChange={ev => setF({ est: ev.target.value })} aria-label="Estabelecimento">
+        <option value="">Estabelecimento: todos</option>{EST.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
+      </select>
+      {children}
+    </div>
+  )
+}
+
+// Período escolhido por extenso ("PERÍODO · MÊS / De 01/09/2026 a 30/09/2026").
+// aba: aba de pasta presa à prancheta de Finanças; sem aba: caixa simples (Notas fiscais).
+export function Periodo({ aba }) {
+  const { F, fin } = useApp()
+  const [s, e] = fin.range()
+  const modo = { week: 'Semana', month: 'Mês', custom: 'Personalizado' }[F.mode]
+  return (
+    <div className={aba ? 'aba-periodo' : 'periodo-box'}>
+      <div className="mono">Período · {modo}</div>
+      <div className="serif">De {dmy(s)} a {dmy(e)}</div>
+    </div>
+  )
+}
+
+// Barra de período (Semana, Mês, Personalizado com data inicial e final) e, com chips, a linha de filtros.
+export default function FilterBar({ chips }) {
+  const { F, setF, fin } = useApp()
   const [s, e] = fin.range()
   const mode = m => setF({ mode: m, anchor: m === 'custom' ? F.anchor : F.anchor })
   const setFrom = v => v && setF({ from: v, to: v > F.to ? v : F.to })
@@ -30,12 +61,7 @@ export default function FilterBar({ chips }) {
       )}
       {chips && (<>
         <div style={{ flexBasis: '100%' }} />
-        {F.cat
-          ? <span className="chip fil"><i className="dot" style={{ background: catColor(F.cat) }} />Categoria: {F.cat}<button onClick={() => setF({ cat: '' })}>×</button></span>
-          : <select className="chip" value="" onChange={ev => setF({ cat: ev.target.value })}><option value="">Categoria: todas</option>{fin.allCats().map(c => <option key={c}>{c}</option>)}</select>}
-        <select className="chip" value={F.est} onChange={ev => setF({ est: ev.target.value })}>
-          <option value="">Estabelecimento: todos</option>{EST.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
-        </select>
+        <Filtros />
       </>)}
     </div>
   )

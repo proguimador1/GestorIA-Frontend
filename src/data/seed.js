@@ -8,7 +8,8 @@ export const NAO_ALIM = 'Não alimentício'
 export const EST = base.emitentes.map(e => ({ id: e.id, name: e.nome, cnpj: e.cnpj }))
 
 // Cores fixas por categoria. As demais recebem cores da PALETTE automaticamente.
-export const CATS = { Hortifruti: '#2E4429', Mercearia: '#C0402A', Laticínios: '#E3A53A', Carnes: '#8C5A3C', Bebidas: '#3B6E8F', Padaria: '#D9822B', Congelados: '#5B8E7D', [NAO_ALIM]: '#9A9A8A', Outros: '#9A9A8A' }
+// Paleta da Prancheta Finanças GestorIA v6 (Mercearia, Laticínios, Carnes, Hortifruti e Padaria vêm da prancheta)
+export const CATS = { Hortifruti: '#2F4A2C', Mercearia: '#B0432A', Laticínios: '#D99A2B', Carnes: '#7A4A2E', Bebidas: '#7D8E96', Padaria: '#E0B56A', Congelados: '#5B8E7D', [NAO_ALIM]: '#9B9B94', Outros: '#9B9B94' }
 
 // Local de armazenamento sugerido por categoria (o item pode trazer "armazenamento" no JSON)
 const STORAGE = { Laticínios: 'geladeira', Hortifruti: 'geladeira', Carnes: 'freezer', Congelados: 'freezer' }
@@ -39,5 +40,5 @@ export const PALETTE=['#D9822B','#A23B72','#3B6E8F','#6C4F9A','#2F8F83','#C9A227
 // Cor de uma categoria: fixa se conhecida; senão, a próxima cor livre da paleta (ordem alfabética das categorias novas).
 export const colorOf=(c,all)=>CATS[c]||PALETTE[all.filter(x=>!CATS[x]).sort().indexOf(c)%PALETTE.length]||CATS.Outros;
 // Cor fixa de cada estabelecimento (barras de Finanças e destaque do melhor preço), pela ordem de cadastro.
-const EST_CORES = ['#4A6B3E', '#C0402A', '#3B6E8F', '#E3A53A', '#8C5A3C', '#6C4F9A', '#2F8F83', '#D9822B', '#A23B72', '#30638E', '#7A9E3B', '#B5651D']
+const EST_CORES = ['#4E6B3E', '#B0432A', '#7D8E96', '#D99A2B', '#7A4A2E', '#2F4A2C', '#E0B56A', '#5B8E7D', '#A23B72', '#30638E', '#7A9E3B', '#B5651D']
 export const estColor = id => EST_CORES[Math.max(0, EST.findIndex(e => e.id === id)) % EST_CORES.length]

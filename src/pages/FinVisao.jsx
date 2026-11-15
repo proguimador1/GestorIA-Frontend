@@ -13,7 +13,7 @@ const Kpi = ({ label, value, sub, hl }) => <div className={'card kpi' + (hl ? ' 
 const Tog = ({ opts, val, onSel }) => <div className="tog">{opts.map(([k, t]) => <span key={k} className={val === k ? 'on' : ''} onClick={() => onSel(k)}>{t}</span>)}</div>
 const Head = ({ title, sub, children }) => (<><div className="ct">{title}</div><div className="cs">{sub}</div>{children && <div style={{ marginTop: 16 }}>{children}</div>}</>)
 // Tons de verde para o gráfico de pizza de métodos de pagamento.
-const VERDES = ['#2E4429', '#4A6B3E', '#7E9A6B', '#A9BF94', '#5B8E7D', '#C9D8B8']
+const VERDES = ['#2F4A2C', '#4E6B3E', '#7E9A6B', '#A9BF94', '#5B8E7D', '#C9D8B8']
 
 // Os 6 meses que terminam no mês de "fim" (AAAA-MM).
 function ultimosMeses(fim, n = 6) {
@@ -35,7 +35,7 @@ function GastoPorMes({ fim }) {
       {linhas.map(({ m, v }) => (
         <div key={m} style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}><b style={{ fontSize: 16, textTransform: 'capitalize' }}>{MES[+m.slice(5) - 1]} {m.slice(0, 4)}</b><span className="serif" style={{ fontWeight: 600, fontSize: 18 }}>{brl(v)}</span></div>
-          <div style={{ height: 14, borderRadius: 7, background: '#e5e1d0', marginTop: 6 }}><div style={{ height: 14, borderRadius: 7, width: (v / max * 100) + '%', background: 'var(--g)' }} /></div>
+          <div style={{ height: 14, borderRadius: 7, background: '#e4dcca', marginTop: 6 }}><div style={{ height: 14, borderRadius: 7, width: (v / max * 100) + '%', background: 'var(--g)' }} /></div>
         </div>
       ))}
       <div className="lab" style={{ fontSize: 14 }}>Total dos 6 meses: {brl(sum(linhas.map(l => l.v)))}{filtros ? ' · ' + filtros : ''}</div>
@@ -94,7 +94,7 @@ export default function Visao() {
   const ins = []
   if (catD[0]) ins.push({ c: catColor(catD[0][0]), t: `${catD[0][0]} é a maior fatia do período: ${pct(catD[0][1] / cTot * 100)} do gasto, ou ${brl(catD[0][1])}.`, l: 'Ver itens', go: () => setF({ cat: catD[0][0] }) })
   if (gr) ins.push({ c: catColor(gr[0]), t: `${gr[0]} ${gr[1] >= 0 ? 'subiu' : 'caiu'} ${pct(Math.abs(gr[1]) * 100)} em relação ${aoA(pl)}.${gr[1] > 0 ? ' É a categoria que mais cresceu.' : ''}`, l: 'Ver itens', go: () => setF({ cat: gr[0] }) })
-  if (top) ins.push({ c: '#E3A53A', t: `O dia mais caro foi ${dm(top[0])}: ${brl(top[1].v)} ${top[1].n.length === 1 ? 'em uma única compra, no ' + estName(top[1].n[0].est) : 'em ' + top[1].n.length + ' compras'}.`, l: 'Ver nota', go: () => { setF({ open: top[1].n[0].id }); nav('/notas') } })
+  if (top) ins.push({ c: '#D99A2B', t: `O dia mais caro foi ${dm(top[0])}: ${brl(top[1].v)} ${top[1].n.length === 1 ? 'em uma única compra, no ' + estName(top[1].n[0].est) : 'em ' + top[1].n.length + ' compras'}.`, l: 'Ver nota', go: () => { setF({ open: top[1].n[0].id }); nav('/notas') } })
   const cmp = `${dm(pr[0])} a ${dm(pr[1])}`
 
   return (
@@ -125,7 +125,7 @@ export default function Visao() {
             {bars.map(b => (
               <div key={b.e.id} className="hov" onClick={() => setF({ est: F.est === b.e.id ? '' : b.e.id })} style={{ marginBottom: 20, opacity: F.est && F.est !== b.e.id ? .45 : 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}><b style={{ fontSize: 17, display: 'flex', alignItems: 'center', gap: 8 }}><i className="dot" style={{ background: estColor(b.e.id), flex: 'none' }} />{b.e.name}</b><span className="serif" style={{ fontWeight: 600, fontSize: 20, whiteSpace: 'nowrap' }}>{brl(b[key])}</span></div>
-                <div style={{ height: 16, borderRadius: 8, background: '#e5e1d0', marginTop: 8 }}><div style={{ height: 16, borderRadius: 8, width: (b[key] / bm * 100) + '%', background: estColor(b.e.id) }} /></div>
+                <div style={{ height: 16, borderRadius: 8, background: '#e4dcca', marginTop: 8 }}><div style={{ height: 16, borderRadius: 8, width: (b[key] / bm * 100) + '%', background: estColor(b.e.id) }} /></div>
                 <div className="lab" style={{ fontSize: 14, marginTop: 7 }}>{b.n} compra{b.n > 1 ? 's' : ''} {fin.phrase()} · {brl(b.m)} por compra</div>
               </div>
             ))}

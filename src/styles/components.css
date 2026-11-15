@@ -63,7 +63,7 @@
 }
 .seg,
 .chip {
-  border: 1px solid #bfc4ae;
+  border: 1px solid #c9bfa8;
   border-radius: 20px;
   padding: 7px 17px;
   background: transparent;
@@ -77,7 +77,7 @@
 }
 .seg.on {
   background: var(--dg);
-  color: #f3efe3;
+  color: #fbf8f1;
   border-color: var(--dg);
   font-weight: 600;
 }
@@ -163,7 +163,7 @@ select.chip {
 }
 .kpi.hl {
   background: var(--dg);
-  color: #f3efe3;
+  color: #fbf8f1;
 }
 .kpi.hl .lab,
 .kpi.hl .s {
@@ -184,7 +184,7 @@ select.chip {
   border: 1px solid #c4c9b3;
   border-radius: 16px;
   padding: 3px;
-  background: #ebe7d8;
+  background: #eae3d2;
 }
 .tog span {
   padding: 4px 13px;
@@ -197,7 +197,7 @@ select.chip {
 }
 .tog span.on {
   background: var(--dg);
-  color: #f3efe3;
+  color: #fbf8f1;
 }
 table {
   width: 100%;
@@ -254,7 +254,7 @@ td {
 .str {
   position: sticky;
   right: 0;
-  background: #ece8d9;
+  background: #eae3d2;
   z-index: 2;
   border-left: 1px solid var(--line);
 }
@@ -348,7 +348,7 @@ thead th.str {
 .note {
   margin-top: 18px;
   padding: 14px 18px;
-  background: #ebe7d8;
+  background: #eae3d2;
   border-radius: 14px;
   line-height: 1.5;
 }
@@ -413,6 +413,7 @@ thead th.str {
 }
 .cam {
   background: #17211a;
+  border: 3px solid var(--brown);
   border-radius: 28px;
   min-height: 470px;
   position: relative;
@@ -433,7 +434,7 @@ thead th.str {
   position: absolute;
   top: 26px;
   left: 26px;
-  color: #f3efe3;
+  color: #fbf8f1;
   display: flex;
   gap: 10px;
   align-items: center;
@@ -489,7 +490,7 @@ thead th.str {
   border-bottom: 1px solid var(--line);
 }
 .ntc .tot {
-  background: #fbf8f0;
+  background: #fbf8f1;
   padding: 16px 24px;
   display: flex;
   justify-content: space-between;
@@ -528,7 +529,8 @@ thead th.str {
   font-size: 16px;
 }
 .empty {
-  border: 2px dashed #c4c9b3;
+  border: 2px dashed var(--tan-b);
+  background: var(--tan);
   border-radius: 24px;
   padding: 60px 30px;
   text-align: center;
@@ -540,7 +542,7 @@ select.f {
   font:
     var(--fs-base) "Instrument Sans",
     sans-serif;
-  border: 1px solid #b8bda8;
+  border: 1px solid var(--tan-b);
   border-radius: 14px;
   padding: 12px 16px;
   background: var(--card);
@@ -584,7 +586,7 @@ select.f {
   left: 50%;
   transform: translateX(-50%);
   background: var(--dg);
-  color: #f3efe3;
+  color: #fbf8f1;
   padding: 14px 22px;
   border-radius: 14px;
   z-index: 60;
@@ -594,16 +596,16 @@ select.f {
   cursor: pointer;
 }
 .hov:hover {
-  background: #ece8d9;
+  background: #eae3d2;
 }
 .sheet th {
   background: var(--dg);
-  color: #f3efe3;
+  color: #fbf8f1;
   border: 1px solid var(--dg);
 }
 .sheet td {
-  border: 1px solid #e1ddcc;
-  background: #fbf9f1;
+  border: 1px solid #e4dcca;
+  background: #fbf8f1;
 }
 @media (max-width: 1100px) {
   .row {
@@ -644,13 +646,14 @@ select.f {
   line-height: 1.55;
 }
 .msg.bot {
-  background: #ebe7d8;
+  background: var(--tan);
+  border: 1px solid #d9c6a0;
   border-bottom-left-radius: 6px;
   align-self: flex-start;
 }
 .msg.me {
   background: var(--dg);
-  color: #f3efe3;
+  color: #fbf8f1;
   border-bottom-right-radius: 6px;
   align-self: flex-end;
 }
@@ -666,7 +669,7 @@ select.f {
   gap: 12px;
   padding: 16px 24px;
   border-top: 1px solid var(--line);
-  background: #fbf8f0;
+  background: #fbf8f1;
 }
 .chatin input {
   border-radius: 20px;
@@ -710,11 +713,12 @@ select.f {
   white-space: nowrap;
 }
 .chatitem:hover {
-  background: #e9e3d2;
+  background: #eae3d2;
 }
 .chatitem.on {
-  background: var(--pill);
-  color: var(--dg);
+  background: var(--board);
+  box-shadow: inset 0 0 0 1px var(--tan-b);
+  color: var(--brown);
   font-weight: 600;
 }
 .chatitem .x {
@@ -781,7 +785,7 @@ select.f {
   flex-wrap: wrap;
   padding: 12px 24px;
   border-top: 1px solid var(--line);
-  background: #ebe7d8;
+  background: #eae3d2;
 }
 .relbar label {
   display: flex;
@@ -892,7 +896,7 @@ select.f {
   width: 44px;
   border-bottom: 0;
   border-radius: 10px 10px 0 0;
-  background: #fbf8f0;
+  background: #fbf8f1;
 }
 /* Menu do perfil */
 .av {
@@ -1026,7 +1030,7 @@ select.f {
   cursor: pointer;
 }
 .legrow:hover {
-  background: #ece8d9;
+  background: #eae3d2;
 }
 .legrow .lab {
   white-space: nowrap;
@@ -1242,7 +1246,7 @@ textarea {
   font:
     var(--fs-base) "Instrument Sans",
     sans-serif;
-  border: 1px solid #b8bda8;
+  border: 1px solid var(--tan-b);
   border-radius: 14px;
   padding: 12px 16px;
   background: var(--card);
@@ -1250,7 +1254,7 @@ textarea {
   resize: vertical;
 }
 input.calc {
-  background: #e9e5d6;
+  background: #eae3d2;
   color: var(--mute);
   border-style: dashed;
   cursor: default;
@@ -1280,7 +1284,7 @@ input.r {
   background: #fbeeea;
 }
 .itab .addrow td {
-  background: #ebe7d8;
+  background: #eae3d2;
   border-bottom: 0;
 }
 .itab .addrow td:first-child {
@@ -1309,7 +1313,7 @@ input.r {
   font-size: var(--fs-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: #ebe7d8;
+  background: #eae3d2;
 }
 .tag.tipo {
   font-weight: 600;
@@ -1541,4 +1545,165 @@ input.r {
 .sugseta:hover,
 .tag.tipo:hover {
   border-color: var(--g);
+}
+/* Sugestões do chatbot em bege com borda marrom (a sugestão "Gerar relatório" segue verde) */
+.chips .chip:not(.fil) {
+  background: var(--tan);
+  border-color: var(--tan-b);
+  color: var(--brown);
+}
+/* ---------- Prancheta de Finanças (Prancheta Finanças GestorIA v6) ---------- */
+/* Linha de cima: barra de período à esquerda e, à direita, a aba "Período" (Finanças) ou a caixa de período (Notas fiscais) */
+.prancheta-topo {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+}
+.prancheta-topo .fbar {
+  flex: 1;
+  min-width: 0;
+  align-self: flex-start;
+}
+/* Com a linha de filtros (Visão geral com filtro ativo), deixa espaço para o prendedor não cobrir os filtros */
+.prancheta-topo .fbar:has(.filtros) {
+  padding-bottom: 34px;
+}
+/* Aba de pasta presa à prancheta: mesma cor e borda da prancheta, sem borda embaixo, cobrindo a borda de cima da prancheta */
+.aba-periodo {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  margin: 20px 26px -3px 0;
+  padding: 12px 22px 14px;
+  background: var(--board);
+  border: 3px solid var(--board-b);
+  border-bottom: 0;
+  border-radius: 16px 16px 0 0;
+}
+.aba-periodo .mono,
+.periodo-box .mono {
+  font-size: 13px;
+  color: var(--brown2);
+}
+.aba-periodo .serif,
+.periodo-box .serif {
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+/* Caixa de período (Notas fiscais) */
+.periodo-box {
+  flex: none;
+  align-self: center;
+  margin-top: 20px;
+  padding: 10px 18px;
+  background: var(--board);
+  border: 1px solid var(--tan-b);
+  border-radius: 14px;
+}
+/* Prancheta: placa bege com borda marrom; o conteúdo (células, gráficos e tabelas) fica sobre ela */
+.prancheta {
+  position: relative;
+  background: var(--board);
+  border: 3px solid var(--board-b);
+  border-radius: 26px;
+  padding: 46px 26px 26px;
+}
+.prancheta > .mt:nth-child(2) {
+  margin-top: 0;
+}
+/* Prendedor de metal no meio da borda de cima, com o furo */
+.prendedor {
+  position: absolute;
+  z-index: 3;
+  top: -27px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 196px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  background: var(--clip);
+  border: 2px solid var(--clip-b);
+  border-radius: 10px;
+}
+.prendedor i {
+  width: 76px;
+  height: 15px;
+  background: var(--side);
+  border: 2px solid var(--clip-b);
+  border-radius: 8px;
+}
+/* ---------- Filtros de categoria e estabelecimento ---------- */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+}
+.fbar .filtros {
+  margin: 0;
+}
+.filtro {
+  height: 48px;
+  padding: 0 16px;
+  font:
+    18px "Instrument Sans",
+    sans-serif;
+  color: var(--brown);
+  background: var(--tan);
+  border: 1px solid var(--tan-b);
+  border-radius: 10px;
+  max-width: 100%;
+}
+select.filtro {
+  appearance: auto;
+  padding-right: 10px;
+  cursor: pointer;
+}
+.filtro.on {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.filtro.on button {
+  border: 0;
+  background: none;
+  color: var(--brown);
+  font-size: 22px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+.filtros .busca {
+  flex: 1 1 260px;
+  max-width: 380px;
+  height: 48px;
+  border: 1px solid var(--tan-b);
+  border-radius: 10px;
+  background: var(--card);
+  font-size: 16px;
+}
+/* Mesma dinâmica dos botões do Início nos filtros */
+select.filtro,
+.filtro.on button {
+  transition: 0.15s;
+}
+select.filtro:hover,
+.filtro.on button:hover {
+  transform: translateY(-3px);
+}
+select.filtro:hover {
+  border-color: var(--g);
+}
+@media (max-width: 1100px) {
+  .prancheta-topo {
+    flex-wrap: wrap;
+  }
+  .aba-periodo {
+    margin-left: auto;
+  }
 }

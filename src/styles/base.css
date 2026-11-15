@@ -13,20 +13,30 @@
   --fs-kpi-s: 19px;
   --fs-card-t: 34px;
   --fs-card-s: 26px;
-  --side: #f2ede0;
-  --top: #fcf9f2;
-  --page: #e6ecd9;
-  --card: #f3efe3;
-  --line: #dad6c4;
-  --dg: #2e4429;
-  --g: #4a6b3e;
-  --g2: #7e9a6b;
-  --amber: #e3a53a;
-  --red: #c0402a;
-  --btn: #bd3a22;
-  --ink: #1f1a14;
-  --mute: #6b665a;
-  --pill: #d7e4cc;
+  --side: #f4efe3;
+  --top: #f4efe3;
+  --page: #e7e8d2;
+  --card: #fbf8f1;
+  --line: #e4dcca;
+  --dg: #2f4a2c;
+  --g: #4e6b3e;
+  --g2: #6e8f5e;
+  --amber: #d99a2b;
+  --red: #b0432a;
+  --btn: #b0432a;
+  --ink: #23301f;
+  --mute: #6b6a5e;
+  --pill: #dce8cc;
+  /* Prancheta de Finanças e filtros (paleta da Prancheta Finanças GestorIA v6) */
+  --tan: #f3e9d3;
+  --tan-b: #a88b63;
+  --brown: #4a3420;
+  --brown2: #6b5e3e;
+  --board: #e8d9bb;
+  --board-b: #6b4e2e;
+  --clip: #9b9b94;
+  --clip-b: #5f5f59;
+  --soft: #eae3d2;
 }
 * {
   box-sizing: border-box;
@@ -82,11 +92,11 @@ body {
   text-decoration: none;
 }
 .nav:hover {
-  background: #e9e3d2;
+  background: #eae3d2;
 }
 .nav.on {
   background: var(--dg);
-  color: #f3efe3;
+  color: #fbf8f1;
 }
 .main {
   flex: 1;

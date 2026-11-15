@@ -12,7 +12,7 @@ export default function Donut({ data, tot, sel, onSel, color, size = 180 }) {
         return <circle key={c} onClick={() => onSel(sel === c ? '' : c)} style={{ cursor: 'pointer', opacity: sel && sel !== c ? .35 : 1 }}
           cx="100" cy="100" r={r} fill="none" stroke={color(c)} strokeWidth="30" strokeDasharray={`${Math.max(0, C * p - 3)} ${C}`} strokeDashoffset={-off} transform="rotate(-90 100 100)" />
       })}
-      <text x="100" y="94" textAnchor="middle" fontSize="14" fill="#6B665A">Total</text>
+      <text x="100" y="94" textAnchor="middle" fontSize="14" fill="#6B6A5E">Total</text>
       <text x="100" y="118" textAnchor="middle" fontSize="17" fontFamily="Fraunces,serif" fontWeight="600">{brl(tot)}</text>
     </svg>
   )
