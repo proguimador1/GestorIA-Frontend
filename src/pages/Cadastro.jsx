@@ -35,7 +35,7 @@ export default function Cadastro() {
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           {draft?.stage === 'classificar' ? <Classificacao /> : (
-            <div className="empty">Nenhuma nota lida ainda.<br />Aponte o QR Code da nota fiscal para a webcam.<br /><span className="mono" style={{ fontSize: 12 }}>Uma nota por vez</span></div>
+            <div className="empty cad-vazio">Nenhuma nota lida ainda.<br />Aponte o QR Code da nota fiscal para a webcam.<br /><span className="mono" style={{ fontSize: 12 }}>Uma nota por vez</span></div>
           )}
         </div>
       </div>

@@ -99,7 +99,11 @@
   color: var(--dg);
   font-weight: 500;
 }
+/* Célula do período (‹ 01/09 – 30/09/26 ›): bege da caixa de período, com borda marrom e texto escuro */
 .chip.dt {
+  background: var(--board);
+  border-color: var(--tan-b);
+  color: var(--ink);
   font:
     var(--fs-sm) "JetBrains Mono",
     monospace;
@@ -1664,19 +1668,30 @@ select.filtro {
   padding-right: 10px;
   cursor: pointer;
 }
-.filtro.on {
+/* Categoria: caixa com a lista de seleção dentro (e a bolinha da cor quando há categoria escolhida) */
+.filtro.sel {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  padding: 0 10px 0 16px;
+  cursor: pointer;
 }
-.filtro.on button {
+.filtro.sel select {
+  height: 100%;
   border: 0;
   background: none;
-  color: var(--brown);
-  font-size: 22px;
-  line-height: 1;
-  padding: 0 2px;
+  font: inherit;
+  color: inherit;
+  padding: 0;
   cursor: pointer;
+  appearance: auto;
+}
+.filtro.sel select:focus {
+  outline: none;
+}
+.filtro.sel:focus-within {
+  outline: 2px solid var(--g);
+  outline-offset: 1px;
 }
 .filtros .busca {
   flex: 1 1 260px;
@@ -1689,15 +1704,27 @@ select.filtro {
 }
 /* Mesma dinâmica dos botões do Início nos filtros */
 select.filtro,
-.filtro.on button {
+.filtro.sel {
   transition: 0.15s;
 }
 select.filtro:hover,
-.filtro.on button:hover {
+.filtro.sel:hover {
   transform: translateY(-3px);
-}
-select.filtro:hover {
   border-color: var(--g);
+}
+/* Notas fiscais · "Ver histórico completo de notas" / "Voltar ao período": verde-escuro do botão Mês ativo, em negrito */
+.sc.hist-link {
+  color: var(--dg);
+  font-weight: 700;
+  text-decoration-color: var(--dg);
+}
+/* Cadastro · quadro "Nenhuma nota lida ainda" com a mesma altura do scanner (470 px), texto centralizado */
+.empty.cad-vazio {
+  min-height: 470px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 @media (max-width: 1100px) {
   .prancheta-topo {

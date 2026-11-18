@@ -32,14 +32,14 @@ export default function Notas() {
       <TabRow tabs={[['nota', 'Por nota']]} active="nota" />
       <div className="prancheta-topo">
         <FilterBar />
-        <Periodo />
+        <Periodo todo={F.all} />
       </div>
       <div className="card mt">
         <div>
           <div className="mono hist-tit">Histórico de notas</div>
           <div className="lab" style={{ fontSize: 14, marginTop: 8 }}>
             Toque numa nota para ver os itens comprados ·{' '}
-            <span className="sc" onClick={() => setF({ all: !F.all, open: null })}>{F.all ? `Voltar ao período (${fin.lab()})` : 'Ver histórico completo de notas'}</span>
+            <span className="sc hist-link" onClick={() => setF({ all: !F.all, open: null })}>{F.all ? `Voltar ao período (${fin.lab()})` : 'Ver histórico completo de notas'}</span>
           </div>
         </div>
         {/* Filtros de categoria e estabelecimento na mesma linha da busca, como na prancheta */}

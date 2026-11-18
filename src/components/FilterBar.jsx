@@ -5,14 +5,16 @@ import { dm, dmy } from '../lib/utils.js'
 import { EST } from '../data/seed.js'
 
 // Filtros de categoria e estabelecimento no estilo da prancheta: caixas bege com borda marrom.
-// Categoria escolhida vira um chip com a cor da categoria e × para limpar. children: itens extras na mesma linha (ex.: busca).
+// Os dois são listas de seleção: dá para escolher outra opção a qualquer momento e voltar a "todas" / "todos".
+// A categoria escolhida mostra a bolinha com a cor dela. O filtro fica guardado ao trocar entre Visão geral e Detalhamento.
+// children: itens extras na mesma linha (ex.: busca).
 export function Filtros({ children }) {
   const { F, setF, fin, catColor } = useApp()
   return (
     <div className="filtros">
-      {F.cat
-        ? <span className="filtro on"><i className="dot" style={{ background: catColor(F.cat) }} />Categoria: {F.cat}<button onClick={() => setF({ cat: '' })} aria-label="Limpar categoria" title="Limpar categoria">×</button></span>
-        : <select className="filtro" value="" onChange={ev => setF({ cat: ev.target.value })} aria-label="Categoria"><option value="">Categoria: todas</option>{fin.allCats().map(c => <option key={c}>{c}</option>)}</select>}
+            <select className="filtro" value={F.cat} onChange={ev => setF({ cat: ev.target.value })} aria-label="Categoria">
+        <option value="">Categoria: todas</option>{fin.allCats().map(c => <option key={c} value={c}>{c}</option>)}
+      </select>
       <select className="filtro" value={F.est} onChange={ev => setF({ est: ev.target.value })} aria-label="Estabelecimento">
         <option value="">Estabelecimento: todos</option>{EST.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
       </select>
@@ -23,10 +25,14 @@ export function Filtros({ children }) {
 
 // Período escolhido por extenso ("PERÍODO · MÊS / De 01/09/2026 a 30/09/2026").
 // aba: aba de pasta presa à prancheta de Finanças; sem aba: caixa simples (Notas fiscais).
-export function Periodo({ aba }) {
-  const { F, fin } = useApp()
-  const [s, e] = fin.range()
-  const modo = { week: 'Semana', month: 'Mês', custom: 'Personalizado' }[F.mode]
+// todo: com "Ver histórico completo de notas" ligado, mostra da primeira à última nota cadastrada (só Notas fiscais;
+// Finanças não passa essa opção e continua com o próprio período).
+export function Periodo({ aba, todo }) {
+  const { F, S, fin } = useApp()
+  const datas = S.notes.map(n => n.date).sort()
+  const completo = todo && datas.length > 0
+  const [s, e] = completo ? [datas[0], datas[datas.length - 1]] : fin.range()
+  const modo = completo ? 'Histórico completo' : { week: 'Semana', month: 'Mês', custom: 'Personalizado' }[F.mode]
   return (
     <div className={aba ? 'aba-periodo' : 'periodo-box'}>
       <div className="mono">Período · {modo}</div>

@@ -100,9 +100,9 @@ export default function Visao() {
   return (
     <>
       <div className="kpis mt">
-        <Kpi hl label="Gasto alimentar no período" value={brl(totAlim)} sub={`${new Set(itAlim.map(i => i.n.est)).size} estabelecimentos · ${fin.lab()}`} />
+        <Kpi hl label="Gasto com alimentos" value={brl(totAlim)} sub={`${new Set(itAlim.map(i => i.n.est)).size} estabelecimentos · ${fin.lab()}`} />
         <Kpi label="Gasto não alimentar" value={brl(totNaoAlim)} />
-        <Kpi label="Total pago no período" value={brl(totPago)} sub="alimentar + não alimentar" />
+        <Kpi label="Total pago" value={brl(totPago)} sub="alimentar + não alimentar" />
         <Kpi label="Variação do gasto" value={<Delta a={tot} b={pt} />} sub={pt ? `contra ${pl} (${cmp}): ${brl(pt)}` : `sem dados em ${cmp}`} />
         <Kpi label="Compras registradas" value={nn} sub={pn ? `${nn === pn ? 'igual ' + aoA(pl) : (nn > pn ? '▲ ' + (nn - pn) + ' a mais que ' : '▼ ' + (pn - nn) + ' a menos que ') + pl} (${pn})` : `sem dados em ${cmp}`} />
         <Kpi label="Valor médio por compra" value={brl(avg)} sub={pavg ? <><Delta a={avg} b={pavg} /> contra {pl} ({brl(pavg)})</> : `sem dados em ${cmp}`} />
