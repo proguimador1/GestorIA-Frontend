@@ -46,7 +46,8 @@ Depois de `npm run build`, envie o conteúdo da pasta `dist` para qualquer hospe
 | `react` e `react-dom` 18 | Interface em componentes. |
 | `react-router-dom` 6 | Rotas por hash (`#/inicio`, `#/financas`, etc.). |
 | `axios` | Chamadas à API de autenticação (JWT). |
-| `xlsx` (SheetJS 0.18.5) | Geração do `.xlsx`, carregado sob demanda no momento do download. |
+| `xlsx-js-style` 1.2.0 | Geração do `.xlsx` com cores, bordas e negrito (mesma API do SheetJS 0.18.5), carregado sob demanda no momento do download. |
+| `xlsx` (SheetJS 0.18.5) | Mantido no `package.json`; a exportação passou a usar o `xlsx-js-style`. |
 | `vite` e `@vitejs/plugin-react` | Servidor de desenvolvimento e build. |
 
 ---
@@ -143,7 +144,7 @@ gestoria/
 - **`finance.js`**: `createFinance(S, F)` devolve as funções de consulta ligadas aos dados e filtros atuais: `range`, `prevRange`, `lab`, `prevLab`, `phrase`, `notesIn`, `items`, `nTot`, `byDay`, `allCats`, `sheetRows` (aba Detalhada) e `sheetSimple` (aba Simples). Também exporta `shiftAnchor` (setas do período).
 - **`chat.js`**: motor do chatbot sobre as notas: `responder` (regras locais, usadas quando o Gemini não está disponível), `executarFerramenta` e `contextoLLM` (consultas pedidas pelo Gemini), `WELCOME`, `SUG` (sugestões) e `relatorioPadrao`. Texto com `###`, `- `, `1. `, `> ` e `**` é desenhado pela tela sem HTML.
 - **`llm.js`**: configuração do Gemini compartilhada entre navegador e servidor: modelo padrão, instrução de sistema (escopo e regras) e declaração das ferramentas. Não contém a chave.
-- **`export.js`**: `exportSheet` gera `GestorIA_AAAA-MM.xlsx` (ou com intervalo de datas para semana e período personalizado) com as abas "Detalhada" e "Simples", total por fórmula, formato de moeda e largura de colunas ajustada ao texto. Se a biblioteca falhar, baixa dois `.csv`.
+- **`export.js`**: `exportSheet` gera `GestorIA_AAAA-MM.xlsx` (ou com intervalo de datas para semana e período personalizado) com as abas "Detalhada" e "Simples", rodapé com Total, Máximo e Mínimo por fórmula (com o estabelecimento e o item de cada valor, em `linhasExtremos`), cores no estilo do app, formato de moeda e largura de colunas ajustada ao texto. Se a biblioteca falhar, baixa dois `.csv`.
 - **`nfce.js`**: nota do Cadastro: `parseNfceXml` (lê o XML), `toNum`/`fmtNum`/`fmtPreco` (números com vírgula), `totais`, `editarItem` (recalcula valores), `errosItem`, `validarNota`, `pareceAlimento` (sugestão inicial alimentar ou não alimentar para notas lidas pela API), `categorizar` (ponto de entrada da LLM de categorização) e `paraNotaDoApp`.
 
 ### `src/services/`
@@ -167,8 +168,8 @@ gestoria/
 - **`Overlays.jsx`**: `Modal` e `Toast`.
 - **`ConfirmDialog.jsx`**: pop-up de confirmação verde com letras brancas, fundo da aplicação translúcido e botões Cancelar e Confirmar (Esc ou clique fora cancelam). Usado para apagar nota fiscal e chat do chatbot.
 - **`PageHead.jsx`**: linha de destaque e título.
-- **`FilterBar.jsx`**: período (Semana, Mês e Personalizado com data inicial e final), setas, atalho "Últimos 30 dias" e filtros de categoria e estabelecimento.
-- **`TabRow.jsx`**: abas, legenda e botão "Gerar planilha" (abre a prévia em modal; em Notas fiscais rola até a prévia da página).
+- **`FilterBar.jsx`**: período (Semana, Mês e Personalizado com data inicial e final) e setas. Exporta também `Filtros` (listas de seleção de categoria e estabelecimento no estilo da prancheta, usadas dentro da tabela do Detalhamento, no cartão de Notas fiscais e, fixas, abaixo do período na Visão geral) e `Periodo` (aba "Período" presa à prancheta em Finanças; caixa de período em Notas fiscais, que mostra da primeira à última nota com "Ver histórico completo de notas").
+- **`TabRow.jsx`**: abas e botão "Gerar planilha", à direita e sem texto ao lado (abre a prévia em modal, em todas as abas).
 - **`SheetPreview.jsx`**: prévia das abas Detalhada e Simples (alternáveis) e botão de download.
 - **`LineChart.jsx`**: gráfico de linha em SVG com curva monotônica e tooltip.
 - **`Donut.jsx`**: rosca de categorias com segmentos clicáveis.
@@ -181,8 +182,8 @@ gestoria/
 - **`Cadastro.jsx`**: leitura da nota (webcam ou simulação), tela de confirmação com todos os campos editáveis e classificação alimentar ou não alimentar antes de gravar (seção 14).
 - **`Financas.jsx`**: cabeçalho, abas, filtros e escolha entre Visão geral e Detalhamento.
 - **`FinVisao.jsx`**: seis indicadores em duas linhas de três (Gasto alimentar no período, Gasto não alimentar, Total pago no período, Variação do gasto, Compras registradas e Valor médio por compra), gráfico de linha, total por estabelecimento, rosca por categoria e destaques em frase.
-- **`FinDetalhamento.jsx`**: "Tabela comparativa de menor preço" (com rolagem vertical e horizontal), frase de análise e atalho para as notas.
-- **`Notas.jsx`**: histórico de notas (sem coluna de categoria) com apenas os itens alimentares, busca, exclusão com pop-up de confirmação e prévia da planilha.
+- **`FinDetalhamento.jsx`**: "Tabela comparativa de menor preço" (com rolagem vertical e horizontal), filtro por estabelecimento, colunas estreitas (pelo menos 3 estabelecimentos visíveis), frase de análise, atalho para as notas e, sem compras no período, aviso em cinza com o botão "Cadastrar meus itens agora".
+- **`Notas.jsx`**: histórico de notas (sem coluna de categoria; fonte, tamanho e cores no mesmo padrão da tabela comparativa do Detalhamento) com apenas os itens alimentares, "Ver histórico completo de notas" / "Voltar ao período", busca e exclusão com pop-up de confirmação. A prévia da planilha abre pelo botão "Gerar planilha".
 - **`Chatbot.jsx`**: histórico de chats, conversa com respostas estruturadas, animação de carregamento, sugestões recolhíveis, seletor de intervalo do relatório e pop-up para apagar chat (seção 15).
 - **`Configuracoes.jsx`**: edição de nome e e-mail e restauração dos dados.
 
@@ -239,6 +240,7 @@ Categorias: Mercearia, Laticínios, Carnes, Bebidas, Padaria e Não alimentício
 ### Notas fiscais
 - A aba lista só os itens alimentares de cada nota; "Itens alimentares" e "Total alimentar" somam apenas esses itens. Nota sem nenhum item alimentar não aparece.
 - Os itens não alimentares continuam gravados na nota e entram no "Gasto não alimentar" de Finanças.
+- "Ver histórico completo de notas" (ao lado da instrução, no topo da lista) mostra todas as notas, de qualquer período; "Voltar ao período" volta ao período escolhido.
 - "Excluir nota" abre um pop-up de confirmação. Ao confirmar, a nota sai de Notas fiscais, Finanças, Chatbot e planilha, e a exclusão fica gravada no navegador.
 
 ### Período
@@ -251,14 +253,35 @@ Categorias: Mercearia, Laticínios, Carnes, Bebidas, Padaria e Não alimentício
 | Indicadores e gráfico de linha | aplica | aplica |
 | Barras por estabelecimento | aplica | ignora (destaca o selecionado) |
 | Rosca por categoria | ignora (destaca a selecionada) | aplica |
+| Pizza por método de pagamento | ignora | aplica |
+| Evolução · Por mês | aplica | aplica |
 
-Clicar numa barra, numa fatia ou numa linha da legenda ativa o filtro. Clicar de novo remove.
+Clicar numa barra, numa fatia ou numa linha da legenda ativa o filtro. Clicar de novo remove. Na pizza de pagamento, o clique só destaca a fatia.
+
+### Prancheta (Finanças) e paleta
+- O conteúdo de Finanças (células, gráficos e tabela) fica sobre uma prancheta bege com borda marrom, com o prendedor de metal no meio da borda de cima e a aba "Período · Mês / De … a …" presa no canto direito (muda com Semana, Mês e Personalizado). Notas fiscais mostra o mesmo período numa caixa ao lado da barra de período.
+- Filtros de categoria e estabelecimento: caixas bege com borda marrom. Os dois são listas de seleção: dá para trocar de opção a qualquer momento e voltar a "Categoria: todas" / "Estabelecimento: todos"; a categoria escolhida mostra a bolinha da cor dela. Na Visão geral ficam fixos abaixo do período; no Detalhamento, dentro da tabela. O filtro escolhido continua valendo ao trocar entre Visão geral e Detalhamento.
+- Célula do período (‹ 01/09 – 30/09/26 ›) no bege da caixa de período (`#E8D9BB`, borda `#A88B63`), em Finanças e Notas fiscais.
+- Cadastro: o quadro "Nenhuma nota lida ainda" tem a mesma altura do scanner, com o texto centralizado.
+- Notas fiscais: "Ver histórico completo de notas" / "Voltar ao período" em verde-escuro e negrito. Com o histórico completo, a caixa de período mostra "Período · Histórico completo" da primeira à última nota cadastrada; Finanças continua com o próprio período.
+- Paleta (Prancheta Finanças GestorIA v6), nas variáveis de `base.css`: página `#E7E8D2`, cartões `#FBF8F1`, barra lateral e superior `#F4EFE3`, linhas `#E4DCCA`, verde-escuro `#2F4A2C`, verde `#4E6B3E`, vermelho `#B0432A`, texto `#23301F`; prancheta `#E8D9BB` / `#6B4E2E`; filtros e campos `#F3E9D3` / `#A88B63`. Categorias: Mercearia `#B0432A`, Laticínios `#D99A2B`, Carnes `#7A4A2E`, Hortifruti `#2F4A2C`, Padaria `#E0B56A`.
+- A planilha `.xlsx` e a prévia da planilha mantêm as cores anteriores.
+
+### Botões
+Todos os botões têm a mesma dinâmica dos cartões do Início: ao passar o mouse, sobem 3 px e ganham contorno verde (transição de 0,15 s). Vale para os botões comuns, abas, Semana/Mês/Personalizado, setas de data, seletores de filtro, alternadores (Por dia, Total, Categoria etc.), sugestões e seta do chatbot, tags do Cadastro e "Mostrar" senha.
+
+### Visão geral
+- A grade de baixo tem duas colunas iguais: cada bloco ocupa o equivalente a 1,5 das 3 colunas das células de cima, com o mesmo espaço de 18 px entre eles (as bordas não se tocam).
+- **Evolução dos gastos:** Por dia, Soma acumulada e **Por mês** (gasto com alimentos nos 6 meses que terminam no fim do período, vinda da branch `develop` e calculada a partir das notas).
+- **Total gasto por estabelecimento:** cada estabelecimento tem uma cor fixa (`estColor`, em `seed.js`), usada também no Detalhamento.
+- **Consumo por categoria alimentar:** os botões Categoria / Pagamento trocam a rosca de categorias pela pizza de métodos de pagamento (mesma lógica, em tons de verde).
+- Sem nenhuma compra no período: as 4 células de baixo (Evolução dos gastos, Total gasto por estabelecimento, O que chamou atenção e Consumo por categoria / método de pagamento) mostram, centralizados, o aviso em cinza "Nada foi cadastrado neste período." e, abaixo dele, o botão cinza e transparente "Cadastrar meus itens agora", que leva à aba Cadastro. O Detalhamento faz o mesmo no lugar da tabela.
 
 ### Detalhamento
-Lista os itens comprados em mais de um estabelecimento, com o último preço unitário de cada. O menor recebe destaque verde, e a coluna "Melhor preço" informa o estabelecimento mais barato e quanto fica abaixo da média, em reais. Tem rolagem vertical (a partir de 6 linhas) e horizontal (mais de 3 estabelecimentos), com a primeira e a última colunas fixas.
+Lista os itens comprados em mais de um estabelecimento, com o último preço unitário de cada. O menor recebe destaque verde, e a coluna "Melhor preço" informa o estabelecimento mais barato com o menor preço ao lado (destacados na cor do estabelecimento) e quanto fica abaixo da média, em reais. Com um estabelecimento no filtro, a tabela mostra só os itens que ele vende, e a coluna dele vem primeiro, destacada. Tem rolagem vertical (a partir de 6 linhas) e horizontal (mais de 3 estabelecimentos), com a primeira e a última colunas fixas.
 
 ### Planilha
-Arquivo `.xlsx` com duas abas, ambas com linha final de total (fórmula `SUM`), valores em formato de moeda e colunas com largura ajustada ao maior texto. As duas refletem o período e os filtros ativos. A prévia mostra as duas abas antes de baixar.
+Arquivo `.xlsx` com duas abas, valores em formato de moeda e colunas com largura ajustada ao maior texto. Formatação: cabeçalho verde-escuro com letras brancas, linhas zebradas em bege e branco, bordas finas. Rodapé: **Total** (fórmula `SUM`, em verde-claro), **Máximo** (`MAX`, em vermelho-claro) e **Mínimo** (`MIN`, em verde-claro). Na aba Detalhada há uma linha de Máximo e uma de Mínimo para Preço unitário e para Total do item; na Simples, para Total da compra. Cada linha reaproveita as colunas Estabelecimento e Item (na Simples, só Estabelecimento) para mostrar de onde vem o valor, com fórmula `INDEX`/`MATCH`. A prévia na tela mostra as mesmas linhas. As duas refletem o período e os filtros ativos. A prévia mostra as duas abas antes de baixar.
 
 | Aba | Colunas |
 |---|---|
@@ -346,7 +369,7 @@ Regras (conferidas por `npm run validar`):
 - Os descontos ficam gravados na nota, mas as análises somam o valor dos itens (sem ratear o desconto).
 - A tela Notas fiscais tem apenas a visão por nota.
 - Os dados ficam só no navegador atual.
-- O `xlsx` 0.18.5 é a última versão publicada no npm; versões mais novas da biblioteca são distribuídas pelo site oficial do SheetJS.
+- O `xlsx` 0.18.5 é a última versão publicada no npm e não grava cores; por isso a exportação usa o `xlsx-js-style` (versão do SheetJS 0.18.5 que grava estilos). Depois de atualizar o projeto, rode `npm install`.
 
 ---
 
