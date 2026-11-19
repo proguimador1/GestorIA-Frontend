@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import jsQR from 'jsqr'
 import PageHead from '../components/PageHead.jsx'
 import { useApp } from '../store/AppContext.jsx'
-import { classificarProdutos, confirmarNota, extrairProdutos, lerNfce } from '../services/gestoria.js'
+import { classificarProdutos, confirmarNota, consultarNfce, extrairProdutos, lerNfce } from '../services/gestoria.js'
 import {
   LIMITES, editarItem, errosItem, errosProdutos, fmtCnpj, fmtNum, nfceParaNota, paraClassificacao, paraConfirmacao,
   paraExtracao, produtoDaExtracao, produtosSemLLM, toNum, totais, validarNota,
@@ -47,19 +48,24 @@ export default function Cadastro() {
   const [lendo, setLendo] = useState(false)
   const ocupado = useRef(false) // evita chamadas duplicadas (botão + leitura da câmera)
 
-  // Consulta a NFC-e fictícia na API e converte a resposta para o formato do pop-up de confirmação.
-  const lerNota = async () => {
+  const [link, setLink] = useState('')
+
+  // Com o link do QR Code, consulta a nota real na SEFAZ-CE; sem link, usa a NFC-e fictícia.
+  // Nos dois casos a resposta é convertida para o formato do pop-up de confirmação.
+  const lerNota = async (url) => {
+    const real = typeof url === 'string' && url.trim() !== ''
     if (ocupado.current) return
     if (mock) return toast('Modo de demonstração: o cadastro de notas precisa da API (VITE_MOCK_AUTH=false).')
     ocupado.current = true; setLendo(true)
     try {
-      const data = await lerNfce()
+      const data = real ? await consultarNfce(url.trim()) : await lerNfce()
       const nota = nfceParaNota(data?.nfce ?? data)
       if (!nota) return toast('Nenhuma nota encontrada na leitura.')
       setDraft({ stage: 'nota', nota })
+      if (data?.nfce?.avisos?.length) toast(data.nfce.avisos.join(' '))
     } catch (e) {
       // O scrapping_module responde 500 depois de várias leituras seguidas (contador interno), até o servidor reiniciar.
-      if (e.response?.status === 500) toast('A leitura falhou no servidor (erro 500). Se já foram feitas muitas leituras, reinicie o backend e tente de novo.')
+      if (!real && e.response?.status === 500) toast('A leitura falhou no servidor (erro 500). Se já foram feitas muitas leituras, reinicie o backend e tente de novo.')
       else toast(e.userMessage || e.message || 'Não foi possível ler a nota.')
     } finally { ocupado.current = false; setLendo(false) }
   }
@@ -75,7 +81,11 @@ export default function Cadastro() {
         <div className="row mt">
           <div style={{ width: 425, flex: 'none' }}>
             <Camera ativa={!draft} onLeitura={lerNota} />
-            <button className="btn dk" style={{ marginTop: 14, width: '100%', justifyContent: 'center' }} onClick={lerNota} disabled={!!draft || lendo}>{lendo ? 'Lendo nota…' : 'Simular leitura da nota'}</button>
+            <form style={{ display: 'flex', gap: 8, marginTop: 14 }} onSubmit={e => { e.preventDefault(); lerNota(link) }}>
+              <input style={{ flex: 1, minWidth: 0 }} placeholder="Ou cole o link do QR Code da nota" value={link} onChange={e => setLink(e.target.value)} disabled={!!draft || lendo} />
+              <button className="btn" type="submit" disabled={!!draft || lendo || !link.trim()}>Consultar</button>
+            </form>
+            <button className="btn dk" style={{ marginTop: 10, width: '100%', justifyContent: 'center' }} onClick={() => lerNota()} disabled={!!draft || lendo}>{lendo ? 'Lendo nota…' : 'Simular leitura da nota'}</button>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="empty">Nenhuma nota lida ainda.<br />Aponte o QR Code da nota fiscal para a webcam.<br /><span className="mono" style={{ fontSize: 12 }}>Uma nota por vez</span></div>
@@ -87,35 +97,106 @@ export default function Cadastro() {
   )
 }
 
-// Webcam: abre ao entrar e fecha ao sair; detecta QR Code quando o navegador suporta.
+const INTERVALO_LEITURA = 250 // ms entre tentativas de leitura do QR Code
+const ESPERA_MESMO_QR = 4000 // ms antes de aceitar de novo o mesmo QR (evita consultas repetidas com o cupom parado na frente da câmera)
+const LARGURA_ANALISE = 640 // px: o frame é reduzido antes de ir para o jsQR
+
+// Devolve uma função (video) => link do QR Code ou null.
+// Usa o BarcodeDetector nativo quando o navegador lê QR Code; senão, o jsQR sobre um canvas (Firefox, Safari, Chrome desktop).
+async function criarDetector() {
+  if ('BarcodeDetector' in window) {
+    try {
+      const formatos = await window.BarcodeDetector.getSupportedFormats()
+      if (formatos.includes('qr_code')) {
+        const bd = new window.BarcodeDetector({ formats: ['qr_code'] })
+        return async video => (await bd.detect(video))[0]?.rawValue || null
+      }
+    } catch { /* cai no jsQR */ }
+  }
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  return async video => {
+    const { videoWidth: w, videoHeight: h } = video
+    if (!w || !h) return null
+    const escala = Math.min(1, LARGURA_ANALISE / w)
+    canvas.width = Math.round(w * escala); canvas.height = Math.round(h * escala)
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const img = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    return jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' })?.data || null
+  }
+}
+
+function mensagemCamera(e) {
+  if (e?.name === 'NotAllowedError' || e?.name === 'SecurityError') return 'Acesso à câmera bloqueado. Libere a permissão no navegador e recarregue a página.'
+  if (e?.name === 'NotFoundError' || e?.name === 'OverconstrainedError') return 'Nenhuma câmera encontrada.'
+  if (e?.name === 'NotReadableError') return 'A câmera está em uso por outro programa.'
+  return 'Não foi possível abrir a câmera.'
+}
+
+const ROTULO_CAMERA = {
+  abrindo: 'Abrindo câmera…',
+  procurando: 'Procurando QR Code…',
+  consultando: 'QR Code lido · consultando nota…',
+  erro: 'Câmera indisponível',
+}
+
+// Webcam: abre ao entrar e fecha ao sair. Lê o QR Code continuamente e entrega o link para onLeitura(link).
+// Depois de cada leitura (com sucesso ou erro) volta a procurar enquanto a tela estiver aguardando uma nota.
 function Camera({ ativa, onLeitura }) {
-  const [camOn, setCamOn] = useState(false)
+  const [estado, setEstado] = useState('abrindo')
+  const [erro, setErro] = useState('')
+  const [espelho, setEspelho] = useState(true)
   const vid = useRef(null)
   const live = useRef(); live.current = { ativa, onLeitura }
   useEffect(() => {
-    if (!navigator.mediaDevices?.getUserMedia) return
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setEstado('erro')
+      setErro(window.isSecureContext ? 'Este navegador não dá acesso à câmera.' : 'A câmera só funciona em localhost ou HTTPS.')
+      return
+    }
     let stream, stop = false, timer
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(st => {
-      if (stop) { st.getTracks().forEach(t => t.stop()); return }
-      stream = st; setCamOn(true)
-      if (vid.current) vid.current.srcObject = st
-      if ('BarcodeDetector' in window) {
-        const bd = new window.BarcodeDetector({ formats: ['qr_code'] })
-        const tick = async () => {
+    let ultimo = { link: '', em: 0 }
+
+    const tick = async detectar => {
+      if (stop) return
+      const video = vid.current
+      if (live.current.ativa && video?.readyState >= 2) {
+        let link = null
+        try { link = await detectar(video) } catch { /* frame ilegível: tenta no próximo */ }
+        if (link && !stop && (link !== ultimo.link || Date.now() - ultimo.em > ESPERA_MESMO_QR)) {
+          ultimo = { link, em: Date.now() }
+          setEstado('consultando')
+          try { await live.current.onLeitura(link) } finally { ultimo.em = Date.now() }
           if (stop) return
-          try { const c = await bd.detect(vid.current); if (c.length && live.current.ativa) { live.current.onLeitura(); return } } catch { /* ignora */ }
-          timer = setTimeout(tick, 600)
+          setEstado('procurando')
         }
-        tick()
       }
-    }).catch(() => {})
-    return () => { stop = true; clearTimeout(timer); stream?.getTracks().forEach(t => t.stop()); setCamOn(false) }
+      timer = setTimeout(() => tick(detectar), INTERVALO_LEITURA)
+    }
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(async st => {
+      if (stop) { st.getTracks().forEach(t => t.stop()); return }
+      stream = st
+      // Câmera traseira (celular) fica como está; webcam/câmera frontal é espelhada, como num espelho.
+      setEspelho(st.getVideoTracks()[0]?.getSettings?.().facingMode !== 'environment')
+      if (vid.current) vid.current.srcObject = st
+      const detectar = await criarDetector()
+      if (stop) return
+      setEstado('procurando')
+      tick(detectar)
+    }).catch(e => {
+      if (stop) return
+      setEstado('erro'); setErro(mensagemCamera(e))
+    })
+    return () => { stop = true; clearTimeout(timer); stream?.getTracks().forEach(t => t.stop()) }
   }, [])
   return (
     <div className="cam">
-      <div className="lb mono"><i />Webcam {camOn ? 'ativa' : 'inativa'}</div>
-      <video ref={vid} autoPlay muted playsInline />
-      <div className="fr" /><div className="hint">Aponte o QR Code da nota fiscal para a webcam</div>
+      <div className="lb mono"><i />{ROTULO_CAMERA[estado]}</div>
+      {/* O espelho é só visual: a leitura usa o frame original da câmera. */}
+      <video ref={vid} className={espelho ? 'espelho' : undefined} autoPlay muted playsInline />
+      <div className={'fr' + (estado === 'consultando' ? ' lido' : '')} />
+      <div className="hint">{estado === 'erro' ? erro : 'Aponte o QR Code da nota fiscal para a câmera'}</div>
     </div>
   )
 }

@@ -14,6 +14,9 @@ const MAX_CLASSIFICAR = 100
 // Nota fictícia gerada pelo serviço gerador_de_compras (XML convertido em JSON pelo backend).
 export const lerNfce = () => api.get('/leitura-qrcode/nfce/').then(r => r.data)
 
+// Nota real: o backend consulta a SEFAZ-CE a partir do link do QR Code e devolve { nfce: {...} }. Nada é gravado.
+export const consultarNfce = url => api.post('/leitura-qrcode/nfce/qrcode/', { url }).then(r => r.data)
+
 // LLM de extração: devolve { nota, produtos } com nome, marca e alimentício. Nada é gravado.
 export const extrairProdutos = nota => api.post('/api/produtos/extrair/', nota).then(r => r.data)
 
